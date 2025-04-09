@@ -1,26 +1,23 @@
 {
+  inputs,
   lib,
-  python3Packages,
+  rustPlatform,
 }:
 
-python3Packages.buildPythonPackage {
+rustPlatform.buildRustPackage {
   pname = "markdown-code-runner";
-  version = "0.1.0";
-  pyproject = true;
+  version = (lib.importTOML "${inputs.self}/Cargo.toml").package.version;
 
-  src = ../../..;
+  src = lib.fileset.toSource {
+    root = ../../..;
+    fileset = lib.fileset.unions [
+      ../../../Cargo.toml
+      ../../../Cargo.lock
+      ../../../src
+    ];
+  };
 
-  nativeBuildInputs = with python3Packages; [
-    hatchling
-  ];
-
-  dependencies = with python3Packages; [ markdown-it-py pydantic-settings ];
-
-  pythonImportsCheck = [ "markdown_code_runner" ];
-
-  nativeCheckInputs = with python3Packages; [
-    pytestCheckHook
-  ];
+  cargoHash = "sha256-8tgswDl7REyFvM0T2gwzArIIODI1FKkuOnvKlnDh/Gk=";
 
   meta = {
     description = "A configurable Markdown code runner that executes and optionally replaces code blocks using external commands";
@@ -38,5 +35,4 @@ python3Packages.buildPythonPackage {
     maintainers = with lib.maintainers; [ drupol ];
     platforms = lib.platforms.all;
   };
-
 }

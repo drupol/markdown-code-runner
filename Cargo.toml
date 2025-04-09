@@ -1,0 +1,28 @@
+[package]
+name = "markdown-code-runner"
+version = "0.1.0"
+edition = "2024"
+description = "Validate, execute and optionally rewrite code blocks in Markdown files based on arbitrary commands"
+readme = "README.md"
+license = "EUPL-1.2"
+repository = "https://github.com/drupol/markdown-code-runner"
+keywords = ["markdown", "code", "parser"]
+
+[dependencies]
+clap = { version = "4.0", features = ["cargo", "derive"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0"
+tempfile = "3"
+markdown = "1.0.0-alpha.23"
+pulldown-cmark = "0.13.0"
+walkdir = "2.5.0"
+log = "0.4.27"
+env_logger = "0.11.8"
+
+[dev-dependencies]
+tempfile = "3"
+
+[[bin]]
+name = "mdcr"
+path = "src/main.rs"

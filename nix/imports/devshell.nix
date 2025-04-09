@@ -2,37 +2,25 @@
 
 {
   perSystem =
-    { pkgs, config, ... }:
+    { pkgs, ... }:
     {
       pre-commit.settings.hooks = {
         commitizen.enable = true;
-        ruff.enable = true;
-        ruff-format.enable = true;
       };
 
       devShells.default = pkgs.mkShell {
-        venvDir = "./.venv";
-
-        packages = [
-          # This execute some shell code to initialize a venv in $venvDir before
-          # dropping into the shell
-          pkgs.python3Packages.venvShellHook
-          # UV for Python dependency management
-          pkgs.uv
-          # Ruff for python code analysis and code formatting
-          pkgs.ruff
+        packages = with pkgs; [
+            cargo
+            clippy
+            rust-analyzer
+            rustc
+            rustfmt
         ];
 
-        # Run this command, only after creating the virtual environment
-        postVenvCreation = ''
-          uv sync --dev
-          ${config.pre-commit.installationScript}
+        shellHook = ''
+          export PATH=$PWD/target/debug:$PATH
+          export RUST_SRC_PATH="${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
         '';
-
-        env = {
-          PYTHON_KEYRING_BACKEND = "keyring.backends.null.Keyring";
-          LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib/";
-        };
       };
     };
 }

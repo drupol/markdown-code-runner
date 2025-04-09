@@ -20,6 +20,7 @@
         inputs.pre-commit-hooks.flakeModule
         ./nix/imports/devshell.nix
         ./nix/imports/pkgs.nix
+        ./nix/imports/checks.nix
       ];
     };
 }

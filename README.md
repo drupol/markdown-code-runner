@@ -3,38 +3,38 @@
 
 # Markdown-code-runner
 
-A configurable command-line tool that parses Markdown files, extracts code blocks, executes them via external commands, and optionally replaces the blocks with the command output.
+A configurable command-line tool written in **Rust** that parses Markdown files, extracts fenced code blocks, executes them via external arbitrary commands, and optionally replaces the content of the blocks with the command output.
 
 Useful for:
 
+- Validating Markdown tutorials with executable code
+- Auto-updating examples and documentation
 - Code formatters (e.g. `black`, `nixfmt`, `shfmt`)
 - Linters (e.g. `ruff`, `php -l`, `prettier --check`)
-- Auto-updating examples and documentation
-- Validating Markdown tutorials with executable code
 
 ## Features
 
-- Scans Markdown code blocks by language
+- Clean configuration via JSON
+- Fast and dependency-free thanks to Rust
+- Scans fenced Markdown code blocks by language
 - Configurable per-language command execution
-- Optional block replacement based on output
-- Supports `--check` mode for CI/linting
-- Smart placeholder expansion (`{file}`, `{lang}`, etc.)
-- Reverse-order processing ensures clean inline replacements
-- Configurable with a clean JSON file, validated using [Pydantic](https://docs.pydantic.dev/)
+- Optional block replacement based on command output
+- `--check` mode for CI/linting use cases
+- Markdown code blocks can opt-out using the `mdcr-skip` flag
+- Placeholder support (`{file}`, `{lang}`, etc.)
 
 ## Installation
 
 ```bash
-pip install markdown-code-runner
-```
-
-Or install locally:
-
-```bash
-git clone https://github.com/yourname/markdown-code-runner.git
+git clone https://github.com/drupol/markdown-code-runner
 cd markdown-code-runner
-pip install .
+cargo build --release
+./target/release/mdcr --help
 ```
+
+### Via nix
+
+Available soon through `markdown-code-runner` package, the binary is called `mdcr`.
 
 ## Usage
 
@@ -64,23 +64,41 @@ Save this file as `config.json`:
 
 ```json
 {
-  "languages": {
-    "black-fix": {
+  "presets": {
+    "ruff-format": {
       "language": "python",
-      "execute": "black {file}",
+      "command": "ruff format --silent {file}; cat {file}",
       "input_mode": "file",
       "replace_output": true
     },
-    "ruff-check": {
-      "language": "python",
-      "execute": "ruff check {file}",
-      "input_mode": "file",
-      "replace_output": false
-    },
     "nixfmt": {
       "language": "nix",
-      "execute": "nixfmt < {file}",
+      "command": "nixfmt < {file}",
       "input_mode": "file",
+      "replace_output": true
+    },
+    "php": {
+      "language": "php",
+      "command": "php-cs-fixer --silent fix {file}; cat {file}",
+      "input_mode": "file",
+      "replace_output": true
+    },
+    "rust": {
+      "language": "rust",
+      "command": "rustfmt {file}; cat {file}",
+      "input_mode": "file",
+      "replace_output": true
+    },
+    "typstyle": {
+      "language": "typst",
+      "command": "typstyle",
+      "input_mode": "string",
+      "replace_output": true
+    },
+    "latex": {
+      "language": "latex",
+      "command": "tex-fmt --stdin",
+      "input_mode": "string",
       "replace_output": true
     }
   }
@@ -90,18 +108,30 @@ Save this file as `config.json`:
 Then run it into a directory:
 
 ```sh
-  find doc/ -name "*.md" -exec mdcr -- {} --config config.json \;
+mdcr --config config.json /path/to/doc/
 ```
 
 ## Markdown Syntax
 
 The tool scans for fenced code blocks like:
 
-\`\`\`python
+````
+```python
 print( "hello" )
-\`\`\`
+```
+````
 
 It will execute all matching commands whose `language` is `python`.
+
+### Skipping a code block
+
+To exclude a block from processing, add mdcr-skip after the language:
+
+````
+```python mdcr-skip
+print("don't touch this")
+```
+````
 
 ## Supported Placeholders
 
@@ -131,7 +161,7 @@ mdcr docs/ --check --config config.json
 It will:
 
 - Run all matching commands
-- Return non-zero if the output differs
+- Return non-zero if the output differs or if any command fails
 - Skip rewriting the Markdown file
 
 [github stars]: https://img.shields.io/github/stars/drupol/markdown-code-runner.svg?style=flat-square
