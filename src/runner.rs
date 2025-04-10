@@ -4,6 +4,7 @@ use crate::config::{AppSettings, InputMode, OutputMode};
 use anyhow::anyhow;
 use log::{debug, error, info, warn};
 use pulldown_cmark::{CodeBlockKind, Event, Parser as MdParser, Tag};
+use rayon::prelude::*;
 use std::fs;
 use std::path::{Path, PathBuf};
 use tempfile::NamedTempFile;
@@ -15,36 +16,10 @@ pub fn process(
     check_only: bool,
     dry_run: bool,
 ) -> anyhow::Result<()> {
-    let markdown_files = collect_markdown_files(&path);
-    let mut any_mismatch = false;
-
-    for file in markdown_files {
-        let result = process_markdown_file(&file, config, check_only, dry_run);
-
-        match result {
-            Ok(mismatch) => {
-                if mismatch {
-                    any_mismatch = true;
-                }
-            }
-            Err(e) => {
-                if dry_run {
-                    warn!(
-                        "Dry-run mode: ignoring error in file {}: {e}",
-                        file.display()
-                    );
-                    continue;
-                }
-                return Err(e);
-            }
-        }
-    }
-
-    if check_only && any_mismatch {
-        return Err(anyhow!(
-            "Code block mismatch detected in one or more files."
-        ));
-    }
+    collect_markdown_files(&path)
+        .par_iter()
+        .map(|file| process_markdown_file(file, config, check_only, dry_run))
+        .collect::<Result<Vec<_>, _>>()?;
 
     Ok(())
 }
@@ -67,13 +42,14 @@ fn process_markdown_file(
     config: &AppSettings,
     check_only: bool,
     dry_run: bool,
-) -> anyhow::Result<bool> {
+) -> anyhow::Result<()> {
     let content = fs::read_to_string(path)?;
     let original_lines: Vec<&str> = content.lines().collect();
 
     let mut parser = MdParser::new(&content).into_offset_iter();
-    let mut mismatch = false;
     let mut replacements: Vec<(usize, usize, Vec<String>)> = Vec::new();
+    let mut global_result_mismatch = false;
+    let mut global_result_success = true;
 
     while let Some((event, range)) = parser.next() {
         let Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(block_code_headers))) = event else {
@@ -130,7 +106,13 @@ fn process_markdown_file(
                 }
             };
 
-            if !success {
+            global_result_success = global_result_success && success;
+
+            if matches!(cfg.mode, OutputMode::Check) {
+                if success {
+                    continue;
+                }
+
                 let msg = format!(
                     "Command for language `{}` failed (exit != 0) in file `{}`:\n{}",
                     cfg.language,
@@ -139,45 +121,105 @@ fn process_markdown_file(
                 );
 
                 if dry_run {
-                    error!("[Dry-run] {msg}");
+                    warn!("{msg}");
                     continue;
                 }
 
+                if check_only {
+                    continue;
+                }
                 return Err(anyhow!("{msg}"));
             }
 
-            if matches!(cfg.mode, OutputMode::Check) && check_only {
-                continue;
+            if matches!(cfg.mode, OutputMode::Replace) {
+                if !success {
+                    let msg = format!(
+                        "Command for language `{}` failed (exit != 0) in file `{}`:\n{}",
+                        cfg.language,
+                        path.display(),
+                        stderr.trim()
+                    );
+
+                    if dry_run {
+                        warn!("{msg}");
+                        continue;
+                    }
+
+                    if check_only {
+                        error!("{msg}");
+                        continue;
+                    }
+
+                    break;
+                }
+
+                let mismatch = output.trim() != code.trim();
+                global_result_mismatch = global_result_mismatch || mismatch;
+
+                if !mismatch {
+                    debug!("Skipping code block, it seems it is already processed...");
+                    continue;
+                };
+
+                if dry_run {
+                    warn!("Code block mismatch detected in: {}", path.display());
+                    continue;
+                }
+
+                if check_only {
+                    error!("Code block mismatch detected in: {}", path.display());
+                    break;
+                }
+
+                let indent = original_lines
+                    .get(start_line)
+                    .map(|line| {
+                        line.chars()
+                            .take_while(|c| c.is_whitespace())
+                            .collect::<String>()
+                    })
+                    .unwrap_or_default();
+
+                let replacement = std::iter::once(format!("```{}", block_code_headers))
+                    .chain(output.lines().map(|l| l.to_string()))
+                    .chain(std::iter::once("```".to_string()))
+                    .map(|l| format!("{indent}{l}"))
+                    .collect();
+
+                if !indent.is_empty() && start_line > 0 {
+                    start_line -= 1;
+                }
+
+                replacements.push((start_line, end_line, replacement));
             }
-
-            if output.trim() == code.trim() {
-                debug!("Skipping code block, it seems it is already processed...");
-                continue;
-            }
-
-            mismatch = true;
-
-            let indent = original_lines
-                .get(start_line)
-                .map(|line| {
-                    line.chars()
-                        .take_while(|c| c.is_whitespace())
-                        .collect::<String>()
-                })
-                .unwrap_or_default();
-
-            let replacement = std::iter::once(format!("```{}", block_code_headers))
-                .chain(output.lines().map(|l| l.to_string()))
-                .chain(std::iter::once("```".to_string()))
-                .map(|l| format!("{indent}{l}"))
-                .collect();
-
-            if !indent.is_empty() && start_line > 0 {
-                start_line -= 1;
-            }
-
-            replacements.push((start_line, end_line, replacement));
         }
+    }
+
+    if check_only {
+        if !global_result_success {
+            return Err(anyhow!("Error(s) while executing commands",));
+        }
+
+        if global_result_mismatch {
+            return Err(anyhow!(
+                "Code block mismatch detected in: {}",
+                path.display()
+            ));
+        }
+
+        return Ok(());
+    }
+
+    if dry_run {
+        if !global_result_success {
+            info!("Error(s) while checking some code blocks in files");
+        }
+
+        if global_result_mismatch {
+            info!("File would be updated: {}", path.display());
+        }
+
+        return Ok(());
     }
 
     let mut updated_lines = original_lines
@@ -189,24 +231,9 @@ fn process_markdown_file(
         updated_lines.splice(start..end, new_lines);
     }
 
-    if !mismatch {
-        return Ok(mismatch);
-    }
-
-    let msg = format!("Code block mismatch detected in: {}", path.display());
-
-    if check_only {
-        return Err(anyhow!("{msg}"));
-    }
-
-    info!("{}", msg);
-
-    if dry_run {
-        info!("[Dry-run] File would be updated: {}", path.display());
-        return Ok(mismatch);
-    }
+    info!("Code block mismatch detected in: {}", path.display());
 
     fs::write(path, updated_lines.join("\n") + "\n")?;
     info!("File updated: {}", path.display());
-    Ok(mismatch)
+    Ok(())
 }

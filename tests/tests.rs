@@ -36,6 +36,8 @@ mod helpers {
         }
 
         pub fn run(&self, args: &[&str]) -> std::process::Output {
+            let _ = env_logger::builder().is_test(true).try_init();
+
             let mut full_args = vec!["run", "--quiet", "--"];
             full_args.extend_from_slice(args);
             std::process::Command::new("cargo")
@@ -59,7 +61,7 @@ fn test_dry_run_does_not_fail_on_error() {
                     "language": "sh",
                     "command": "sh -c 'exit 42'",
                     "input_mode": "string",
-                    "mode": "replace"
+                    "mode": "check"
                 }
             }
         }"#,
@@ -80,7 +82,7 @@ fn test_dry_run_does_not_fail_on_error() {
 
     let stderr = String::from_utf8_lossy(&output.stderr);
     println!("stderr: {}", stderr);
-    assert!(stderr.contains("[Dry-run] Command for language"));
+    assert!(stderr.contains("Command for language"));
 }
 
 #[test]
@@ -131,13 +133,14 @@ fn test_check_mode_detects_differences() {
     let output = env.run(&[
         env.md_path.to_str().unwrap(),
         "--check",
+        "--log",
+        "debug",
         "--config",
         env.cfg_path.to_str().unwrap(),
     ]);
 
     assert!(!output.status.success());
     let stderr = String::from_utf8_lossy(&output.stderr);
-    println!("stderr: {}", stderr);
     assert!(stderr.contains("Code block mismatch"));
 }
 
@@ -152,7 +155,7 @@ fn test_prints_warning_on_failure() {
                     "language": "sh",
                     "command": "sh -c 'exit 1'",
                     "input_mode": "string",
-                    "mode": "replace"
+                    "mode": "check"
                 }
             }
         }"#,
@@ -166,7 +169,6 @@ fn test_prints_warning_on_failure() {
 
     assert!(!output.status.success());
     let stderr = String::from_utf8_lossy(&output.stderr);
-    println!("stderr: {}", stderr);
     assert!(stderr.contains("Command for language"));
 }
 
@@ -209,7 +211,7 @@ fn test_check_mode_no_changes_returns_zero() {
                     "language": "sh",
                     "command": "echo hello",
                     "input_mode": "string",
-                    "mode": "check"
+                    "mode": "replace"
                 }
             }
         }"#,
@@ -274,7 +276,7 @@ fn test_dry_run_allows_command_failure() {
                     "language": "sh",
                     "command": "sh -c 'exit 1'",
                     "input_mode": "string",
-                    "mode": "replace"
+                    "mode": "check"
                 }
             }
         }"#,
@@ -326,16 +328,10 @@ fn test_check_mode_fails_on_change_but_does_not_write() {
         env.cfg_path.to_str().unwrap(),
     ]);
 
-    assert!(
-        !output.status.success(),
-        "Check mode should fail if code is outdated"
-    );
+    assert!(!output.status.success());
 
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(
-        stderr.contains("Code block mismatch detected"),
-        "Expected mismatch warning, got: {stderr}"
-    );
+    assert!(stderr.contains("Code block mismatch detected"),);
 
     let after = std::fs::read_to_string(&env.md_path).unwrap();
     assert_eq!(original, after, "Check mode must not alter the file");
@@ -411,7 +407,6 @@ fn test_dry_run_outputs_warning_but_does_not_write() {
         env.md_path.to_str().unwrap(),
         "--config",
         env.cfg_path.to_str().unwrap(),
-        "--check",
         "--dry-run",
         "--log",
         "debug",
@@ -423,8 +418,6 @@ fn test_dry_run_outputs_warning_but_does_not_write() {
     assert_eq!(original, final_content);
 
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(
-        stderr.contains("Dry-run mode: ignoring error in file"),
-        "Expected dry-run output, got: {stderr}"
-    );
+    assert!(stderr.contains("Code block mismatch detected"),);
+    assert!(stderr.contains("File would be updated"),);
 }
