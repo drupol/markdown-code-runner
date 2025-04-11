@@ -3,27 +3,30 @@ use std::io::Write;
 use std::path::Path;
 use std::process::{Command, Stdio};
 
-pub fn run_command_with_input(
-    command: &str,
-    input: &str,
-) -> anyhow::Result<(String, String, bool)> {
+fn prepare_command(command_str: &str) -> Command {
     let (shell, shell_arg) = if cfg!(windows) {
         ("cmd", "/C")
     } else {
         ("sh", "-c")
     };
-
-    let mut binding = Command::new(shell);
-    let command = binding
-        .arg(shell_arg)
-        .arg(command)
-        .stdin(Stdio::piped())
+    let mut cmd = Command::new(shell);
+    cmd.arg(shell_arg)
+        .arg(command_str)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
+    cmd
+}
+
+pub fn run_command_with_input(
+    command: &str,
+    input: &str,
+) -> anyhow::Result<(String, String, bool)> {
+    let mut cmd = prepare_command(command);
+    cmd.stdin(Stdio::piped());
 
     debug!("Executing command {:?}", command);
 
-    let mut child = command.spawn()?;
+    let mut child = cmd.spawn()?;
 
     if let Some(stdin) = child.stdin.as_mut() {
         stdin.write_all(input.as_bytes())?;
@@ -39,22 +42,11 @@ pub fn run_command_with_input(
 }
 
 pub fn run_command_with_file(command: &str) -> anyhow::Result<(String, String, bool)> {
-    let (shell, shell_arg) = if cfg!(windows) {
-        ("cmd", "/C")
-    } else {
-        ("sh", "-c")
-    };
-
-    let mut binding = Command::new(shell);
-    let command = binding
-        .arg(shell_arg)
-        .arg(command)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
+    let mut cmd = prepare_command(command);
 
     debug!("Executing command {:?}", command);
 
-    let output = command.output()?;
+    let output = cmd.output()?;
 
     Ok((
         String::from_utf8_lossy(&output.stdout).to_string(),
