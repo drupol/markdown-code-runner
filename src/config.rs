@@ -18,7 +18,7 @@ pub enum OutputMode {
 #[derive(Debug, Deserialize)]
 pub struct PresetConfig {
     pub language: String,
-    pub command: String,
+    pub command: Vec<String>,
     pub input_mode: InputMode,
     pub mode: OutputMode,
 }

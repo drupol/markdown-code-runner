@@ -22,7 +22,7 @@ pub struct Cli {
     #[arg(long = "dry-run")]
     pub dry_run: bool,
     /// Log level (error, warn, info, debug, trace)
-    #[arg(long, default_value = "warn")]
+    #[arg(long, default_value = "warn", value_parser = ["error", "warn", "info", "debug", "trace"])]
     pub log: String,
     /// Verbose mode (set the log level to `trace`)
     #[arg(long)]

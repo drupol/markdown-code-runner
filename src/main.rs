@@ -9,6 +9,7 @@ use cli::Cli;
 
 use clap::Parser;
 use std::fs;
+
 fn main() -> anyhow::Result<()> {
     let args = Cli::parse();
     let mut log = args.log;
@@ -21,5 +22,13 @@ fn main() -> anyhow::Result<()> {
 
     let settings: AppSettings = serde_json::from_str(&fs::read_to_string(&args.config)?)?;
 
-    process(args.path, &settings, args.check, args.dry_run)
+    let results = process(args.path, &settings, args.check, args.dry_run);
+
+    let errors: Vec<_> = results.into_iter().filter_map(Result::err).collect();
+
+    if let Some(error) = errors.into_iter().next() {
+        anyhow::bail!(error);
+    }
+
+    Ok(())
 }

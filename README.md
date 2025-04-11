@@ -67,37 +67,41 @@ Save this file as `config.json`:
   "presets": {
     "ruff-format": {
       "language": "python",
-      "command": "ruff format --silent {file}; cat {file}",
-      "input_mode": "file",
+      "command": [ "ruff", "format", "-" ],
+      "input_mode": "string",
       "replace_output": true
     },
     "nixfmt": {
       "language": "nix",
-      "command": "nixfmt < {file}",
-      "input_mode": "file",
+      "command": [ "nixfmt" ],
+      "input_mode": "string",
       "replace_output": true
     },
     "php": {
       "language": "php",
-      "command": "php-cs-fixer --silent fix {file}; cat {file}",
+      "command": [
+        "sh",
+        "-c",
+        "php-cs-fixer fix -q --rules=@PSR12 {file}; cat {file}"
+      ],
       "input_mode": "file",
-      "replace_output": true
-    },
+      "mode": "replace"
+    }
     "rust": {
       "language": "rust",
-      "command": "rustfmt {file}; cat {file}",
-      "input_mode": "file",
+      "command": ["rustfmt"],
+      "input_mode": "string",
       "replace_output": true
     },
     "typstyle": {
       "language": "typst",
-      "command": "typstyle",
+      "command": [ "typstyle" ],
       "input_mode": "string",
       "replace_output": true
     },
     "latex": {
       "language": "latex",
-      "command": "tex-fmt --stdin",
+      "command": [ "tex-fmt", "--stdin" ],
       "input_mode": "string",
       "replace_output": true
     }

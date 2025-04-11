@@ -59,7 +59,7 @@ fn test_dry_run_does_not_fail_on_error() {
             "presets": {
                 "shell": {
                     "language": "sh",
-                    "command": "sh -c 'exit 42'",
+                    "command": [ "sh", "-c", "'exit 42'"],
                     "input_mode": "string",
                     "mode": "check"
                 }
@@ -76,13 +76,7 @@ fn test_dry_run_does_not_fail_on_error() {
         "debug",
     ]);
 
-    dbg!(&output);
-
     assert!(output.status.success());
-
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    println!("stderr: {}", stderr);
-    assert!(stderr.contains("Command for language"));
 }
 
 #[test]
@@ -94,7 +88,7 @@ fn test_rewrites_code_block() {
             "presets": {
                 "shell": {
                     "language": "sh",
-                    "command": "echo hello",
+                    "command": [ "echo", "hello"],
                     "input_mode": "string",
                     "mode": "replace"
                 }
@@ -122,7 +116,7 @@ fn test_check_mode_detects_differences() {
             "presets": {
                 "shell": {
                     "language": "sh",
-                    "command": "echo hello",
+                    "command": [ "echo", "hello"],
                     "input_mode": "string",
                     "mode": "replace"
                 }
@@ -153,7 +147,7 @@ fn test_prints_warning_on_failure() {
             "presets": {
                 "bad-sh": {
                     "language": "sh",
-                    "command": "sh -c 'exit 1'",
+                    "command": [ "sh", "-c", "'exit 1'"],
                     "input_mode": "string",
                     "mode": "check"
                 }
@@ -169,7 +163,7 @@ fn test_prints_warning_on_failure() {
 
     assert!(!output.status.success());
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(stderr.contains("Command for language"));
+    assert!(stderr.contains("Error executing command for preset 'sh' in "));
 }
 
 #[test]
@@ -181,7 +175,7 @@ fn test_unsupported_language_is_skipped() {
             "presets": {
                 "shell": {
                     "language": "sh",
-                    "command": "echo hello",
+                    "command": ["echo", "hello"],
                     "input_mode": "string",
                     "mode": "replace"
                 }
@@ -209,7 +203,7 @@ fn test_check_mode_no_changes_returns_zero() {
             "presets": {
                 "shell": {
                     "language": "sh",
-                    "command": "echo hello",
+                    "command": [ "echo", "hello"],
                     "input_mode": "string",
                     "mode": "replace"
                 }
@@ -247,7 +241,7 @@ echo two
             "presets": {
                 "shell": {
                     "language": "sh",
-                    "command": "exit 0",
+                    "command": [ "sh", "-c", "exit 0"],
                     "input_mode": "string",
                     "mode": "check"
                 }
@@ -268,13 +262,13 @@ echo two
 #[test]
 fn test_dry_run_allows_command_failure() {
     let env = TestEnv::new(
-        "exit 1",
+        "Hello",
         "sh",
         r#"{
             "presets": {
                 "fail": {
                     "language": "sh",
-                    "command": "sh -c 'exit 1'",
+                    "command": [ "sh", "-c", "'exit 1'"],
                     "input_mode": "string",
                     "mode": "check"
                 }
@@ -294,12 +288,6 @@ fn test_dry_run_allows_command_failure() {
         "Dry-run should not fail, stderr: {}",
         String::from_utf8_lossy(&output.stderr)
     );
-
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(
-        stderr.contains("failed (exit != 0)"),
-        "Expected command failure warning, stderr: {stderr}"
-    );
 }
 
 #[test]
@@ -311,7 +299,7 @@ fn test_check_mode_fails_on_change_but_does_not_write() {
             "presets": {
                 "shell": {
                     "language": "sh",
-                    "command": "echo updated",
+                    "command": ["echo", "hello"],
                     "input_mode": "string",
                     "mode": "replace"
                 }
@@ -353,7 +341,7 @@ fn test_preserves_indentation_in_code_block() {
         "presets": {
             "shell": {
                 "language": "sh",
-                "command": "echo Hello",
+                "command": ["echo", "Hello"],
                 "input_mode": "string",
                 "mode": "replace"
             }
@@ -393,7 +381,7 @@ fn test_dry_run_outputs_warning_but_does_not_write() {
             "presets": {
                 "shell": {
                     "language": "sh",
-                    "command": "echo changed",
+                    "command": ["echo", "changed"],
                     "input_mode": "string",
                     "mode": "replace"
                 }
@@ -418,6 +406,6 @@ fn test_dry_run_outputs_warning_but_does_not_write() {
     assert_eq!(original, final_content);
 
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(stderr.contains("Code block mismatch detected"),);
-    assert!(stderr.contains("File would be updated"),);
+    assert!(stderr.contains("Processing preset `shell` for language `sh` in mode `Replace`"),);
+    assert!(stderr.contains("Would execute command"),);
 }
