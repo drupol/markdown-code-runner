@@ -9,8 +9,8 @@ Useful for:
 
 - Validating Markdown tutorials with executable code
 - Auto-updating examples and documentation
-- Code formatters (e.g. `black`, `nixfmt`, `shfmt`)
-- Linters (e.g. `ruff`, `php -l`, `prettier --check`)
+- Code formatters (e.g. `black`, `nixfmt`, `shfmt`, `php-cs-fixer`, etc)
+- Linters (e.g. `ruff`, `php -l`, `prettier`, etc)
 
 ## Features
 
@@ -39,13 +39,13 @@ Available soon through `markdown-code-runner` package, the binary is called `mdc
 ## Usage
 
 ```bash
-mdcr path/to/file.md --config config.toml
+mdcr --config config.toml path/to/file.md
 ```
 
 ### Check Mode (non-destructive)
 
 ```bash
-mdcr docs/ --check --config config.toml
+mdcr --config config.toml --check docs/
 ```
 
 This will:
@@ -77,6 +77,7 @@ replace_output = true
 
 [presets.php]
 language = "php"
+# php-cs-fixer does not support STDIN, therefore, we use a temporary file
 command = [
   "sh",
   "-c",
@@ -124,7 +125,7 @@ It will execute all matching commands whose `language` is `python`.
 
 ### Skipping a code block
 
-To exclude a block from processing, add mdcr-skip after the language:
+To exclude a block from processing, add `mdcr-skip` after the language:
 
 ````
 ```python mdcr-skip
@@ -153,7 +154,7 @@ You can use placeholders in the `execute` field:
 Use in your CI pipeline:
 
 ```bash
-mdcr docs/ --check --config config.toml
+mdcr --config config.toml --check docs/
 ```
 
 It will:
@@ -161,6 +162,40 @@ It will:
 - Run all matching commands
 - Return non-zero if the output differs or if any command fails
 - Skip rewriting the Markdown file
+
+## Logging with `--log`
+
+The CLI option `--log` allows you to control the verbosity and destination of log messages emitted during execution.
+
+### Usage
+
+```bash
+mdcr --config config.toml --log info path/to/file.md
+```
+
+### Available log levels
+
+The logging system uses standard log levels, from most verbose to least:
+
+| Level   | Description                                           |
+| ------- | ----------------------------------------------------- |
+| `trace` | Highly detailed, useful for debugging internal issues |
+| `debug` | General debugging information                         |
+| `info`  | Informational messages about execution progress       |
+| `warn`  | Non-critical issues that deserve attention            |
+| `error` | Critical problems encountered during execution        |
+
+By default, if no `--log` option is provided, the logging level defaults to `warn`.
+
+### Example
+
+To show detailed debugging information, run:
+
+```bash
+mdcr --config config.toml --log debug docs/
+```
+
+This helps in troubleshooting command execution and seeing internal state details clearly.
 
 [github stars]: https://img.shields.io/github/stars/drupol/markdown-code-runner.svg?style=flat-square
 [donate github]: https://img.shields.io/badge/Sponsor-Github-brightgreen.svg?style=flat-square
