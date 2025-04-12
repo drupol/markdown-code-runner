@@ -163,7 +163,7 @@ fn test_prints_warning_on_failure() {
 
     assert!(!output.status.success());
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(stderr.contains("Error executing command for preset 'sh' in "));
+    assert!(stderr.contains("Error executing command for preset `bad-sh`"));
 }
 
 #[test]
@@ -268,7 +268,7 @@ fn test_dry_run_allows_command_failure() {
             "presets": {
                 "fail": {
                     "language": "sh",
-                    "command": [ "sh", "-c", "'exit 1'"],
+                    "command": [ "sh", "-c", "exit 1"],
                     "input_mode": "string",
                     "mode": "check"
                 }
@@ -407,5 +407,4 @@ fn test_dry_run_outputs_warning_but_does_not_write() {
 
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(stderr.contains("Processing preset `shell` for language `sh` in mode `Replace`"),);
-    assert!(stderr.contains("Would execute command"),);
 }

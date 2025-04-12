@@ -105,7 +105,7 @@ fn process_markdown_file(
                 preset, lang, preset_cfg.mode
             );
 
-            match run_command(preset_cfg, &code, dry_run) {
+            match run_command(preset_cfg, &code) {
                 Ok((_, output, _)) => {
                     let mut context = PresetContext {
                         output: &output,
@@ -133,19 +133,21 @@ fn process_markdown_file(
                     }
                 }
                 Err(e) => {
-                    error!(
-                        "Error executing command for preset '{}' in {}: {}",
-                        preset_cfg.language,
+                    let msg = format!(
+                        "Error executing command for preset `{}` in `{}`: {}",
+                        preset,
                         path.display(),
                         e
                     );
 
-                    return Err(anyhow!(
-                        "Failed command execution for lang '{}' in {}: {}",
-                        preset_cfg.language,
-                        path.display(),
-                        e
-                    ));
+                    if dry_run {
+                        warn!("{}", msg);
+                        continue 'preset_loop;
+                    }
+
+                    error!("{}", msg);
+
+                    return Err(anyhow!("{}", msg));
                 }
             }
         }
@@ -244,10 +246,6 @@ fn handle_preset_result(ctx: &mut PresetContext) -> PresetResult {
     match ctx.preset_cfg.mode {
         OutputMode::Check => Ok((PresetLoopAction::Continue, None)),
         OutputMode::Replace => {
-            if ctx.dry_run {
-                return Ok((PresetLoopAction::Continue, None));
-            }
-
             let mismatch = ctx.output.trim() != ctx.code.trim();
             *ctx.global_result_mismatch = *ctx.global_result_mismatch || mismatch;
 
@@ -256,14 +254,20 @@ fn handle_preset_result(ctx: &mut PresetContext) -> PresetResult {
                 return Ok((PresetLoopAction::Continue, None));
             }
 
+            let msg = format!(
+                "Code block mismatch detected in: {} (preset: {}, language: {})",
+                ctx.path.display(),
+                ctx.preset,
+                ctx.preset_cfg.language
+            );
+
+            if ctx.dry_run {
+                warn!("{}", msg);
+                return Ok((PresetLoopAction::Continue, None));
+            }
+
             if ctx.check_only {
-                error!(
-                    "Code block mismatch detected in: {} (preset: {}, language: {}) (check-only)",
-                    ctx.path.display(),
-                    ctx.preset,
-                    ctx.preset_cfg.language
-                );
-                return Ok((PresetLoopAction::Break, None));
+                return Err(anyhow!("{}", msg));
             }
 
             info!(
