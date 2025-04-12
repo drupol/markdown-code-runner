@@ -1,5 +1,5 @@
 use crate::command::run_command;
-use crate::config::{AppSettings, OutputMode, PresetConfig}; // Added PresetConfig here
+use crate::config::{AppSettings, OutputMode, PresetConfig};
 
 use anyhow::anyhow;
 use log::{debug, error, info, warn};
@@ -190,37 +190,33 @@ fn process_markdown_file(
             .push((start, end, lines));
     }
 
-    for (file_path, mut file_replacements) in replacements_by_file {
-        let file_content = fs::read_to_string(&file_path)?;
-        let mut file_lines: Vec<String> = file_content.lines().map(String::from).collect();
+    replacements_by_file
+        .into_par_iter()
+        .map(|(file_path, mut file_replacements)| {
+            let file_content = fs::read_to_string(&file_path)?;
+            let mut file_lines: Vec<String> = file_content.lines().map(String::from).collect();
 
-        file_replacements.sort_by_key(|(start, _, _)| std::cmp::Reverse(*start));
+            file_replacements.sort_by_key(|(start, _, _)| std::cmp::Reverse(*start));
 
-        for (start, end, new_lines) in file_replacements {
-            let bounded_end = std::cmp::min(end, file_lines.len());
-            let bounded_start = std::cmp::min(start, bounded_end);
+            for (start, end, new_lines) in file_replacements {
+                let bounded_end = std::cmp::min(end, file_lines.len());
+                let bounded_start = std::cmp::min(start, bounded_end);
 
-            if bounded_start > file_lines.len() {
-                warn!(
-                    "Start index {} out of bounds for {}",
+                debug!(
+                    "Applying replacement lines {}-{} in {}",
                     bounded_start,
+                    bounded_end,
                     file_path.display()
                 );
-                continue;
+                file_lines.splice(bounded_start..bounded_end, new_lines);
             }
 
-            debug!(
-                "Applying replacement lines {}-{} in {}",
-                bounded_start,
-                bounded_end,
-                file_path.display()
-            );
-            file_lines.splice(bounded_start..bounded_end, new_lines);
-        }
+            fs::write(&file_path, file_lines.join("\n") + "\n")?;
+            info!("Updated: {}", file_path.display());
 
-        fs::write(&file_path, file_lines.join("\n") + "\n")?;
-        info!("Updated: {}", file_path.display());
-    }
+            Ok::<_, anyhow::Error>(())
+        })
+        .collect::<Result<Vec<_>, _>>()?;
 
     if file_had_command_failures {
         warn!("Updated with command errors: {}", path.display());
