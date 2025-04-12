@@ -20,7 +20,7 @@ fn main() -> anyhow::Result<()> {
 
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(&log)).init();
 
-    let settings: AppSettings = serde_json::from_str(&fs::read_to_string(&args.config)?)?;
+    let settings: AppSettings = toml::from_str(&fs::read_to_string(&args.config)?)?;
 
     let results = process(args.path, &settings, args.check, args.dry_run);
 

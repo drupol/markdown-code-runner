@@ -14,7 +14,7 @@ Useful for:
 
 ## Features
 
-- Clean configuration via JSON
+- Clean configuration via a TOML file
 - Fast and dependency-free thanks to Rust
 - Scans fenced Markdown code blocks by language
 - Configurable per-language command execution
@@ -39,13 +39,13 @@ Available soon through `markdown-code-runner` package, the binary is called `mdc
 ## Usage
 
 ```bash
-mdcr path/to/file.md --config config.json
+mdcr path/to/file.md --config config.toml
 ```
 
 ### Check Mode (non-destructive)
 
 ```bash
-mdcr docs/ --check --config config.json
+mdcr docs/ --check --config config.toml
 ```
 
 This will:
@@ -54,65 +54,60 @@ This will:
 - Fail with exit code `1` if output differs from original (like a linter)
 - Do **not** modify files
 
-## Configuration: `config.json`
+## Configuration: `config.toml`
 
 The configuration file defines which commands to run for which Markdown block languages.
 
 ### Example
 
-Save this file as `config.json`:
+Save this file as `config.toml`:
 
-```json
-{
-  "presets": {
-    "ruff-format": {
-      "language": "python",
-      "command": [ "ruff", "format", "-" ],
-      "input_mode": "stdin",
-      "replace_output": true
-    },
-    "nixfmt": {
-      "language": "nix",
-      "command": [ "nixfmt" ],
-      "input_mode": "stdin",
-      "replace_output": true
-    },
-    "php": {
-      "language": "php",
-      "command": [
-        "sh",
-        "-c",
-        "php-cs-fixer fix -q --rules=@PSR12 {file}; cat {file}"
-      ],
-      "input_mode": "file",
-      "mode": "replace"
-    }
-    "rust": {
-      "language": "rust",
-      "command": ["rustfmt"],
-      "input_mode": "stdin",
-      "replace_output": true
-    },
-    "typstyle": {
-      "language": "typst",
-      "command": [ "typstyle" ],
-      "input_mode": "stdin",
-      "replace_output": true
-    },
-    "latex": {
-      "language": "latex",
-      "command": [ "tex-fmt", "--stdin" ],
-      "input_mode": "stdin",
-      "replace_output": true
-    }
-  }
-}
+```toml
+[presets.ruff-format]
+language = "python"
+command = ["ruff", "format", "-"]
+input_mode = "stdin"
+replace_output = true
+
+[presets.nixfmt]
+language = "nix"
+command = ["nixfmt"]
+input_mode = "stdin"
+replace_output = true
+
+[presets.php]
+language = "php"
+command = [
+  "sh",
+  "-c",
+  "php-cs-fixer fix -q --rules=@PSR12 {file}; cat {file}"
+]
+input_mode = "file"
+mode = "replace"
+
+[presets.rust]
+language = "rust"
+command = ["rustfmt"]
+input_mode = "stdin"
+replace_output = true
+
+[presets.typstyle]
+language = "typst"
+command = ["typstyle"]
+input_mode = "stdin"
+replace_output = true
+
+[presets.latex]
+language = "latex"
+command = ["tex-fmt", "--stdin"]
+input_mode = "stdin"
+replace_output = true
 ```
 
 Then run it into a directory:
 
 ```sh
-mdcr --config config.json /path/to/doc/
+mdcr --config config.toml /path/to/doc/
 ```
 
 ## Markdown Syntax
@@ -158,7 +153,7 @@ You can use placeholders in the `execute` field:
 Use in your CI pipeline:
 
 ```bash
-mdcr docs/ --check --config config.json
+mdcr docs/ --check --config config.toml
 ```
 
 It will:

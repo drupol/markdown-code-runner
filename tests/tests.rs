@@ -55,16 +55,13 @@ fn test_dry_run_does_not_fail_on_error() {
     let env = TestEnv::new(
         "echo error",
         "sh",
-        r#"{
-            "presets": {
-                "shell": {
-                    "language": "sh",
-                    "command": [ "sh", "-c", "'exit 42'"],
-                    "input_mode": "stdin",
-                    "mode": "check"
-                }
-            }
-        }"#,
+        r#"
+        [presets.shell]
+        language = "sh"
+        command = ["sh", "-c", "'exit 42'"]
+        input_mode = "stdin"
+        mode = "check"
+        "#,
     );
 
     let output = env.run(&[
@@ -84,16 +81,13 @@ fn test_rewrites_code_block() {
     let env = TestEnv::new(
         "echo hello",
         "sh",
-        r#"{
-            "presets": {
-                "shell": {
-                    "language": "sh",
-                    "command": [ "echo", "hello"],
-                    "input_mode": "stdin",
-                    "mode": "replace"
-                }
-            }
-        }"#,
+        r#"
+        [presets.shell]
+        language = "sh"
+        command = ["echo", "hello"]
+        input_mode = "stdin"
+        mode = "replace"
+        "#,
     );
 
     let output = env.run(&[
@@ -112,16 +106,13 @@ fn test_check_mode_detects_differences() {
     let env = TestEnv::new(
         "echo something-else",
         "sh",
-        r#"{
-            "presets": {
-                "shell": {
-                    "language": "sh",
-                    "command": [ "echo", "hello"],
-                    "input_mode": "stdin",
-                    "mode": "replace"
-                }
-            }
-        }"#,
+        r#"
+        [presets.shell]
+        language = "sh"
+        command = ["echo", "hello"]
+        input_mode = "stdin"
+        mode = "replace"
+        "#,
     );
 
     let output = env.run(&[
@@ -143,16 +134,13 @@ fn test_prints_warning_on_failure() {
     let env = TestEnv::new(
         "echo bad",
         "sh",
-        r#"{
-            "presets": {
-                "bad-sh": {
-                    "language": "sh",
-                    "command": [ "sh", "-c", "'exit 1'"],
-                    "input_mode": "stdin",
-                    "mode": "check"
-                }
-            }
-        }"#,
+        r#"
+        [presets.bad-sh]
+        language = "sh"
+        command = ["sh", "-c", "'exit 1'"]
+        input_mode = "stdin"
+        mode = "check"
+        "#,
     );
 
     let output = env.run(&[
@@ -171,16 +159,13 @@ fn test_unsupported_language_is_skipped() {
     let env = TestEnv::new(
         "console.log('hi');",
         "javascript",
-        r#"{
-            "presets": {
-                "shell": {
-                    "language": "sh",
-                    "command": ["echo", "hello"],
-                    "input_mode": "stdin",
-                    "mode": "replace"
-                }
-            }
-        }"#,
+        r#"
+        [presets.shell]
+        language = "sh"
+        command = ["echo", "hello"]
+        input_mode = "stdin"
+        mode = "replace"
+        "#,
     );
 
     let output = env.run(&[
@@ -199,16 +184,13 @@ fn test_check_mode_no_changes_returns_zero() {
     let env = TestEnv::new(
         "hello",
         "sh",
-        r#"{
-            "presets": {
-                "shell": {
-                    "language": "sh",
-                    "command": [ "echo", "hello"],
-                    "input_mode": "stdin",
-                    "mode": "replace"
-                }
-            }
-        }"#,
+        r#"
+        [presets.shell]
+        language = "sh"
+        command = ["echo", "hello"]
+        input_mode = "stdin"
+        mode = "replace"
+        "#,
     );
 
     let output = env.run(&[
@@ -237,16 +219,13 @@ echo one
 echo two
 ```
         "#,
-        r#"{
-            "presets": {
-                "shell": {
-                    "language": "sh",
-                    "command": [ "sh", "-c", "exit 0"],
-                    "input_mode": "stdin",
-                    "mode": "check"
-                }
-            }
-        }"#,
+        r#"
+        [presets.shell]
+        language = "sh"
+        command = ["sh", "-c", "exit 0"]
+        input_mode = "stdin"
+        mode = "check"
+        "#,
     );
 
     let output = env.run(&[
@@ -264,16 +243,13 @@ fn test_dry_run_allows_command_failure() {
     let env = TestEnv::new(
         "Hello",
         "sh",
-        r#"{
-            "presets": {
-                "fail": {
-                    "language": "sh",
-                    "command": [ "sh", "-c", "exit 1"],
-                    "input_mode": "stdin",
-                    "mode": "check"
-                }
-            }
-        }"#,
+        r#"
+        [presets.fail]
+        language = "sh"
+        command = ["sh", "-c", "exit 1"]
+        input_mode = "stdin"
+        mode = "check"
+        "#,
     );
 
     let output = env.run(&[
@@ -295,16 +271,13 @@ fn test_check_mode_fails_on_change_but_does_not_write() {
     let env = TestEnv::new(
         "echo outdated",
         "sh",
-        r#"{
-            "presets": {
-                "shell": {
-                    "language": "sh",
-                    "command": ["echo", "hello"],
-                    "input_mode": "stdin",
-                    "mode": "replace"
-                }
-            }
-        }"#,
+        r#"
+        [presets.shell]
+        language = "sh"
+        command = ["echo", "hello"]
+        input_mode = "stdin"
+        mode = "replace"
+        "#,
     );
 
     let original = std::fs::read_to_string(&env.md_path).unwrap();
@@ -337,16 +310,13 @@ fn test_preserves_indentation_in_code_block() {
 - Bar
     "#;
 
-    let config = r#"{
-        "presets": {
-            "shell": {
-                "language": "sh",
-                "command": ["echo", "Hello"],
-                "input_mode": "stdin",
-                "mode": "replace"
-            }
-        }
-    }"#;
+    let config = r#"
+      [presets.shell]
+      language = "sh"
+      command = ["echo", "Hello"]
+      input_mode = "stdin"
+      mode = "replace"
+      "#;
 
     let env = TestEnv::from_raw_markdown(markdown, config);
 
@@ -377,16 +347,13 @@ fn test_dry_run_outputs_warning_but_does_not_write() {
     let env = TestEnv::new(
         "echo hello",
         "sh",
-        r#"{
-            "presets": {
-                "shell": {
-                    "language": "sh",
-                    "command": ["echo", "changed"],
-                    "input_mode": "stdin",
-                    "mode": "replace"
-                }
-            }
-        }"#,
+        r#"
+        [presets.shell]
+        language = "sh"
+        command = ["echo", "changed"]
+        input_mode = "stdin"
+        mode = "replace"
+        "#,
     );
 
     let original = std::fs::read_to_string(&env.md_path).unwrap();
