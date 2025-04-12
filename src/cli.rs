@@ -1,3 +1,4 @@
+use clap::ArgGroup;
 use clap::Parser;
 use std::path::PathBuf;
 
@@ -9,21 +10,32 @@ use std::path::PathBuf;
     author = clap::crate_authors!(),
     about = clap::crate_description!()
 )]
+#[command(group(
+    ArgGroup::new("mode")
+        .args(["check", "dry_run"])
+        .multiple(false)
+        .required(false),
+))]
 pub struct Cli {
     /// Path to the Markdown file or directory
     pub path: PathBuf,
+
     /// Path to the config JSON file
     #[arg(long)]
     pub config: PathBuf,
+
     /// Run in check mode (do not write changes)
     #[arg(long)]
     pub check: bool,
+
     /// Simulate changes, but don't write files
     #[arg(long = "dry-run")]
     pub dry_run: bool,
+
     /// Log level (error, warn, info, debug, trace)
     #[arg(long, default_value = "warn", value_parser = ["error", "warn", "info", "debug", "trace"])]
     pub log: String,
+
     /// Verbose mode (set the log level to `trace`)
     #[arg(long)]
     pub verbose: bool,

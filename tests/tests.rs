@@ -60,7 +60,7 @@ fn test_dry_run_does_not_fail_on_error() {
                 "shell": {
                     "language": "sh",
                     "command": [ "sh", "-c", "'exit 42'"],
-                    "input_mode": "string",
+                    "input_mode": "stdin",
                     "mode": "check"
                 }
             }
@@ -89,7 +89,7 @@ fn test_rewrites_code_block() {
                 "shell": {
                     "language": "sh",
                     "command": [ "echo", "hello"],
-                    "input_mode": "string",
+                    "input_mode": "stdin",
                     "mode": "replace"
                 }
             }
@@ -117,7 +117,7 @@ fn test_check_mode_detects_differences() {
                 "shell": {
                     "language": "sh",
                     "command": [ "echo", "hello"],
-                    "input_mode": "string",
+                    "input_mode": "stdin",
                     "mode": "replace"
                 }
             }
@@ -148,7 +148,7 @@ fn test_prints_warning_on_failure() {
                 "bad-sh": {
                     "language": "sh",
                     "command": [ "sh", "-c", "'exit 1'"],
-                    "input_mode": "string",
+                    "input_mode": "stdin",
                     "mode": "check"
                 }
             }
@@ -176,7 +176,7 @@ fn test_unsupported_language_is_skipped() {
                 "shell": {
                     "language": "sh",
                     "command": ["echo", "hello"],
-                    "input_mode": "string",
+                    "input_mode": "stdin",
                     "mode": "replace"
                 }
             }
@@ -204,7 +204,7 @@ fn test_check_mode_no_changes_returns_zero() {
                 "shell": {
                     "language": "sh",
                     "command": [ "echo", "hello"],
-                    "input_mode": "string",
+                    "input_mode": "stdin",
                     "mode": "replace"
                 }
             }
@@ -242,7 +242,7 @@ echo two
                 "shell": {
                     "language": "sh",
                     "command": [ "sh", "-c", "exit 0"],
-                    "input_mode": "string",
+                    "input_mode": "stdin",
                     "mode": "check"
                 }
             }
@@ -269,7 +269,7 @@ fn test_dry_run_allows_command_failure() {
                 "fail": {
                     "language": "sh",
                     "command": [ "sh", "-c", "exit 1"],
-                    "input_mode": "string",
+                    "input_mode": "stdin",
                     "mode": "check"
                 }
             }
@@ -300,7 +300,7 @@ fn test_check_mode_fails_on_change_but_does_not_write() {
                 "shell": {
                     "language": "sh",
                     "command": ["echo", "hello"],
-                    "input_mode": "string",
+                    "input_mode": "stdin",
                     "mode": "replace"
                 }
             }
@@ -342,7 +342,7 @@ fn test_preserves_indentation_in_code_block() {
             "shell": {
                 "language": "sh",
                 "command": ["echo", "Hello"],
-                "input_mode": "string",
+                "input_mode": "stdin",
                 "mode": "replace"
             }
         }
@@ -382,7 +382,7 @@ fn test_dry_run_outputs_warning_but_does_not_write() {
                 "shell": {
                     "language": "sh",
                     "command": ["echo", "changed"],
-                    "input_mode": "string",
+                    "input_mode": "stdin",
                     "mode": "replace"
                 }
             }

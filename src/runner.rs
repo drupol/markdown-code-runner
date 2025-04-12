@@ -316,7 +316,7 @@ mod tests {
         let preset_cfg = PresetConfig {
             language: "sh".into(),
             command: vec!["echo".into(), "Hello".into()],
-            input_mode: InputMode::String,
+            input_mode: InputMode::Stdin,
             mode: OutputMode::Replace,
         };
 

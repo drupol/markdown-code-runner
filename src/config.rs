@@ -4,7 +4,7 @@ use std::collections::HashMap;
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum InputMode {
-    String,
+    Stdin,
     File,
 }
 

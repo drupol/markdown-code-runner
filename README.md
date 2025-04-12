@@ -68,13 +68,13 @@ Save this file as `config.json`:
     "ruff-format": {
       "language": "python",
       "command": [ "ruff", "format", "-" ],
-      "input_mode": "string",
+      "input_mode": "stdin",
       "replace_output": true
     },
     "nixfmt": {
       "language": "nix",
       "command": [ "nixfmt" ],
-      "input_mode": "string",
+      "input_mode": "stdin",
       "replace_output": true
     },
     "php": {
@@ -90,19 +90,19 @@ Save this file as `config.json`:
     "rust": {
       "language": "rust",
       "command": ["rustfmt"],
-      "input_mode": "string",
+      "input_mode": "stdin",
       "replace_output": true
     },
     "typstyle": {
       "language": "typst",
       "command": [ "typstyle" ],
-      "input_mode": "string",
+      "input_mode": "stdin",
       "replace_output": true
     },
     "latex": {
       "language": "latex",
       "command": [ "tex-fmt", "--stdin" ],
-      "input_mode": "string",
+      "input_mode": "stdin",
       "replace_output": true
     }
   }
@@ -151,8 +151,7 @@ You can use placeholders in the `execute` field:
 ## Safeguards
 
 - Blocks with unsupported languages are skipped with a warning.
-- `{file}` placeholder is **only allowed** in `input_mode: "file"` mode.
-- `replace_output: false` keeps code intact even if the command alters it.
+- `{file}` placeholder is **only available** in `input_mode: "file"` mode.
 
 ## CI-Friendly `--check` Mode
 
