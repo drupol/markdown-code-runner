@@ -9,8 +9,8 @@ Useful for:
 
 - Validating Markdown tutorials with executable code
 - Auto-updating examples and documentation
-- Code formatters (e.g. `black`, `nixfmt`, `shfmt`, `php-cs-fixer`, etc)
-- Linters (e.g. `ruff`, `php -l`, `prettier`, etc)
+- Code formatting code blocks (e.g. `black`, `nixfmt`, `shfmt`, `php-cs-fixer`, etc)
+- Linting code blocks (e.g. `ruff`, `php -l`, `prettier`, etc)
 
 ## Features
 
@@ -45,7 +45,7 @@ mdcr --config config.toml path/to/file.md
 ### Check Mode (non-destructive)
 
 ```bash
-mdcr --config config.toml --check docs/
+mdcr --config config.toml --check path/to/file.md
 ```
 
 This will:
@@ -105,7 +105,7 @@ input_mode = "stdin"
 replace_output = true
 ```
 
-Then run it into a directory:
+Then run it against a directory containing Markdown files:
 
 ```sh
 mdcr --config config.toml /path/to/doc/
@@ -135,7 +135,7 @@ print("don't touch this")
 
 ## Supported Placeholders
 
-You can use placeholders in the `execute` field:
+You can use placeholders in the `command` field:
 
 | Placeholder | Description                      |
 | ----------- | -------------------------------- |
