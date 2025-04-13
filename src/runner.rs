@@ -153,6 +153,11 @@ fn process_markdown_file(
         }
     }
 
+    if replacements.is_empty() {
+        debug!("No changes needed for file: {}", path.display());
+        return Ok(());
+    }
+
     if dry_run {
         return Ok(());
     }
@@ -176,13 +181,9 @@ fn process_markdown_file(
         return Ok(());
     }
 
-    if replacements.is_empty() {
-        debug!("No changes needed for file: {}", path.display());
-        return Ok(()); // No changes, successful processing
-    }
-
     let mut replacements_by_file: HashMap<PathBuf, Vec<(usize, usize, Vec<String>)>> =
         HashMap::new();
+
     for (file_path, start, end, lines) in replacements {
         replacements_by_file
             .entry(file_path)

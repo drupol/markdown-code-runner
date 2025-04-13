@@ -10,7 +10,6 @@ pub enum InputMode {
     File,
 }
 
-
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[derive(Default)]
@@ -19,7 +18,6 @@ pub enum OutputMode {
     Replace,
     Check,
 }
-
 
 #[derive(Debug, Deserialize)]
 pub struct PresetConfig {
