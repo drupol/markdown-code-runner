@@ -60,7 +60,7 @@ fn test_dry_run_does_not_fail_on_error() {
         language = "sh"
         command = ["sh", "-c", "'exit 42'"]
         input_mode = "stdin"
-        mode = "check"
+        output_mode = "check"
         "#,
     );
 
@@ -86,7 +86,7 @@ fn test_rewrites_code_block() {
         language = "sh"
         command = ["echo", "hello"]
         input_mode = "stdin"
-        mode = "replace"
+        output_mode = "replace"
         "#,
     );
 
@@ -111,7 +111,7 @@ fn test_check_mode_detects_differences() {
         language = "sh"
         command = ["echo", "hello"]
         input_mode = "stdin"
-        mode = "replace"
+        output_mode = "replace"
         "#,
     );
 
@@ -139,7 +139,7 @@ fn test_prints_warning_on_failure() {
         language = "sh"
         command = ["sh", "-c", "'exit 1'"]
         input_mode = "stdin"
-        mode = "check"
+        output_mode = "check"
         "#,
     );
 
@@ -164,7 +164,7 @@ fn test_unsupported_language_is_skipped() {
         language = "sh"
         command = ["echo", "hello"]
         input_mode = "stdin"
-        mode = "replace"
+        output_mode = "replace"
         "#,
     );
 
@@ -189,7 +189,7 @@ fn test_check_mode_no_changes_returns_zero() {
         language = "sh"
         command = ["echo", "hello"]
         input_mode = "stdin"
-        mode = "replace"
+        output_mode = "replace"
         "#,
     );
 
@@ -224,7 +224,7 @@ echo two
         language = "sh"
         command = ["sh", "-c", "exit 0"]
         input_mode = "stdin"
-        mode = "check"
+        output_mode = "check"
         "#,
     );
 
@@ -248,7 +248,7 @@ fn test_dry_run_allows_command_failure() {
         language = "sh"
         command = ["sh", "-c", "exit 1"]
         input_mode = "stdin"
-        mode = "check"
+        output_mode = "check"
         "#,
     );
 
@@ -276,7 +276,7 @@ fn test_check_mode_fails_on_change_but_does_not_write() {
         language = "sh"
         command = ["echo", "hello"]
         input_mode = "stdin"
-        mode = "replace"
+        output_mode = "replace"
         "#,
     );
 
@@ -315,7 +315,7 @@ fn test_preserves_indentation_in_code_block() {
       language = "sh"
       command = ["echo", "Hello"]
       input_mode = "stdin"
-      mode = "replace"
+      output_mode = "replace"
       "#;
 
     let env = TestEnv::from_raw_markdown(markdown, config);
@@ -352,7 +352,7 @@ fn test_dry_run_outputs_warning_but_does_not_write() {
         language = "sh"
         command = ["echo", "changed"]
         input_mode = "stdin"
-        mode = "replace"
+        output_mode = "replace"
         "#,
     );
 

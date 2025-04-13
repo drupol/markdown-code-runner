@@ -66,14 +66,10 @@ Save this file as `config.toml`:
 [presets.ruff-format]
 language = "python"
 command = ["ruff", "format", "-"]
-input_mode = "stdin"
-replace_output = true
 
 [presets.nixfmt]
 language = "nix"
 command = ["nixfmt"]
-input_mode = "stdin"
-replace_output = true
 
 [presets.php]
 language = "php"
@@ -84,25 +80,18 @@ command = [
   "php-cs-fixer fix -q --rules=@PSR12 {file}; cat {file}"
 ]
 input_mode = "file"
-mode = "replace"
 
 [presets.rust]
 language = "rust"
 command = ["rustfmt"]
-input_mode = "stdin"
-replace_output = true
 
 [presets.typstyle]
 language = "typst"
 command = ["typstyle"]
-input_mode = "stdin"
-replace_output = true
 
 [presets.latex]
 language = "latex"
 command = ["tex-fmt", "--stdin"]
-input_mode = "stdin"
-replace_output = true
 ```
 
 Then run it against a directory containing Markdown files:

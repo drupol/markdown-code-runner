@@ -102,7 +102,7 @@ fn process_markdown_file(
 
             debug!(
                 "Processing preset `{}` for language `{}` in mode `{:?}`",
-                preset, lang, preset_cfg.mode
+                preset, lang, preset_cfg.output_mode
             );
 
             match run_command(preset_cfg, &code) {
@@ -239,7 +239,7 @@ fn collect_markdown_files(path: &Path) -> Vec<PathBuf> {
 }
 
 fn handle_preset_result(ctx: &mut PresetContext) -> PresetResult {
-    match ctx.preset_cfg.mode {
+    match ctx.preset_cfg.output_mode {
         OutputMode::Check => Ok((PresetLoopAction::Continue, None)),
         OutputMode::Replace => {
             let mismatch = ctx.output.trim() != ctx.code.trim();
@@ -317,7 +317,7 @@ mod tests {
             language: "sh".into(),
             command: vec!["echo".into(), "Hello".into()],
             input_mode: InputMode::Stdin,
-            mode: OutputMode::Replace,
+            output_mode: OutputMode::Replace,
         };
 
         let output = "Hello\n";
