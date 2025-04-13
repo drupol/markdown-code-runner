@@ -73,7 +73,7 @@ command = ["nixfmt"]
 
 [presets.php]
 language = "php"
-# php-cs-fixer does not support STDIN, therefore, we use a temporary file
+# php-cs-fixer does not support STDIN, so we use a temporary file
 command = [
   "sh",
   "-c",
@@ -94,11 +94,21 @@ language = "latex"
 command = ["tex-fmt", "--stdin"]
 ```
 
-Then run it against a directory containing Markdown files:
+#### Input Modes
 
-```sh
-mdcr --config config.toml /path/to/doc/
-```
+Each preset supports an optional `input_mode`, which defines how the code block is passed to the command:
+
+- `stdin` (default): The code is passed via standard input (`STDIN`)
+- `file`: The code is written to a temporary file and its path is passed, the temporary file is deleted immediately after execution
+
+#### Output Modes
+
+Each preset also supports an optional `output_mode`, which defines how the command output is used:
+
+- `replace` (default): Replace the code block content with the command's output
+- `check`: Check the command's exit code, if it is different from `0`, the command failed, and the tool will return a non-zero exit code
+
+If not specified, both `input_mode` and `output_mode` default to `stdin` and `replace`, respectively.
 
 ## Markdown Syntax
 
