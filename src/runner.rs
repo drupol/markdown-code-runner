@@ -8,6 +8,7 @@ use rayon::prelude::*;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::process::{Command, Output};
 use walkdir::WalkDir;
 
 enum PresetLoopAction {
@@ -19,7 +20,7 @@ type Replacement = (PathBuf, usize, usize, Vec<String>);
 type PresetResult = anyhow::Result<(PresetLoopAction, Option<Replacement>)>;
 
 pub struct PresetContext<'a> {
-    pub output: &'a str,
+    pub output: &'a Output,
     pub preset: &'a str,
     pub preset_cfg: &'a PresetConfig,
     pub path: &'a Path,
@@ -106,7 +107,25 @@ fn process_markdown_file(
             );
 
             match run_command(preset_cfg, &code) {
-                Ok((_, output, _)) => {
+                Ok((command, output)) => {
+                    if !output.status.success() {
+                        let msg = format!(
+                            "The command `{}` returned a non-zero exit status ({}) for preset `{}` in `{}`, `{:?}`",
+                            command_to_string(&command),
+                            output.status.code().unwrap(),
+                            preset,
+                            path.display(),
+                            String::from_utf8_lossy(&output.stderr).trim()
+                        );
+
+                        if dry_run {
+                            warn!("{}", msg);
+                            continue 'preset_loop;
+                        }
+
+                        return Err(anyhow!("{}", msg));
+                    }
+
                     let mut context = PresetContext {
                         output: &output,
                         preset,
@@ -243,7 +262,7 @@ fn handle_preset_result(ctx: &mut PresetContext) -> PresetResult {
     match ctx.preset_cfg.output_mode {
         OutputMode::Check => Ok((PresetLoopAction::Continue, None)),
         OutputMode::Replace => {
-            let mismatch = ctx.output.trim() != ctx.code.trim();
+            let mismatch = String::from_utf8_lossy(&ctx.output.stdout).trim() != ctx.code.trim();
             *ctx.global_result_mismatch = *ctx.global_result_mismatch || mismatch;
 
             if !mismatch {
@@ -287,7 +306,12 @@ fn handle_preset_result(ctx: &mut PresetContext) -> PresetResult {
 
             let replacement_lines: Vec<String> =
                 std::iter::once(format!("```{}", ctx.block_code_headers))
-                    .chain(ctx.output.lines().map(|l| l.to_string()))
+                    .chain(
+                        String::from_utf8_lossy(&ctx.output.stdout)
+                            .trim()
+                            .lines()
+                            .map(|l| l.to_string()),
+                    )
                     .chain(std::iter::once("```".to_string()))
                     .map(|l| format!("{}{}", indent, l))
                     .collect();
@@ -305,11 +329,34 @@ fn handle_preset_result(ctx: &mut PresetContext) -> PresetResult {
     }
 }
 
+fn command_to_string(cmd: &Command) -> String {
+    let program = cmd.get_program().to_string_lossy();
+    let args = cmd
+        .get_args()
+        .map(|arg| arg.to_string_lossy().to_string())
+        .collect::<Vec<String>>()
+        .join(" ");
+    format!("{} {}", program, args)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::config::{InputMode, OutputMode, PresetConfig};
+    #[cfg(unix)]
+    use std::os::unix::process::ExitStatusExt;
+    #[cfg(windows)]
+    use std::os::windows::process::ExitStatusExt;
     use std::path::PathBuf;
+    use std::process::{ExitStatus, Output};
+
+    fn mock_output(stdout: &str, stderr: &str, status_code: i32) -> Output {
+        Output {
+            stdout: stdout.as_bytes().to_vec(),
+            stderr: stderr.as_bytes().to_vec(),
+            status: ExitStatus::from_raw(status_code),
+        }
+    }
 
     #[test]
     fn test_handle_preset_result_replacement_generated() {
@@ -321,7 +368,7 @@ mod tests {
             output_mode: OutputMode::Replace,
         };
 
-        let output = "Hello\n";
+        let output = mock_output("Hello\n", "", 0); // success = exit code 0
         let code = "echo something";
         let block_code_headers = "sh";
         let path = PathBuf::from("test.md");
@@ -333,7 +380,7 @@ mod tests {
         let mut mismatch = false;
 
         let mut ctx = PresetContext {
-            output,
+            output: &output,
             preset,
             preset_cfg: &preset_cfg,
             path: &path,
@@ -349,7 +396,7 @@ mod tests {
         let (action, replacement_opt) = handle_preset_result(&mut ctx).unwrap();
 
         assert!(mismatch);
-        assert_eq!(matches!(action, PresetLoopAction::Break), true);
+        assert!(matches!(action, PresetLoopAction::Break));
         let (rep_path, rep_start, rep_end, lines) =
             replacement_opt.expect("Expected a replacement");
         assert_eq!(rep_path, path);

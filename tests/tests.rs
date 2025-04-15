@@ -58,7 +58,7 @@ fn test_dry_run_does_not_fail_on_error() {
         r#"
         [presets.shell]
         language = "sh"
-        command = ["sh", "-c", "'exit 42'"]
+        command = ["sh", "-c", "exit 42"]
         input_mode = "stdin"
         output_mode = "check"
         "#,
@@ -137,7 +137,7 @@ fn test_prints_warning_on_failure() {
         r#"
         [presets.bad-sh]
         language = "sh"
-        command = ["sh", "-c", "'exit 1'"]
+        command = ["sh", "-c", "exit 123"]
         input_mode = "stdin"
         output_mode = "check"
         "#,
@@ -151,7 +151,8 @@ fn test_prints_warning_on_failure() {
 
     assert!(!output.status.success());
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(stderr.contains("Error executing command for preset `bad-sh`"));
+    dbg!(&stderr);
+    assert!(stderr.contains("Error: The command `sh -c exit 123` returned a non-zero exit status (123) for preset `bad-sh` in "));
 }
 
 #[test]
