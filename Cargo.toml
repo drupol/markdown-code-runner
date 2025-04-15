@@ -29,3 +29,6 @@ walkdir = "2.5.0"
 [[bin]]
 name = "mdcr"
 path = "src/main.rs"
+
+[profile.release]
+strip = true
