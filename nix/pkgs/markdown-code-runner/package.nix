@@ -17,7 +17,7 @@ rustPlatform.buildRustPackage {
     ];
   };
 
-  cargoHash = "sha256-JVbBigWKramdtQR9VPRY777vODOw7Fkz+kyNPSnSCJg=";
+  cargoHash = "sha256-HOJCnuzd6i4v1SpR4jstlpNkvSgH/4kvvE6Lsr4cgbI=";
 
   meta = {
     description = "A configurable Markdown code runner that executes and optionally replaces code blocks using external commands";
