@@ -265,7 +265,7 @@ fn handle_preset_result(
                         .map(|l| l.to_string()),
                 )
                 .chain(std::iter::once("```".to_string()))
-                .map(|l| format!("{}{}", block.indent, l))
+                .map(|l| format!("{:indent$}{}", "", l, indent = block.indent))
                 .collect::<Vec<String>>()
                 .join("\n");
 

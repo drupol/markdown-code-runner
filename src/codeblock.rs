@@ -11,7 +11,7 @@ pub struct CodeBlock {
     pub code: String,
     pub start_line: usize,
     pub end_line: usize,
-    pub indent: String,
+    pub indent: usize,
 }
 
 impl CodeBlock {
@@ -93,15 +93,15 @@ impl Iterator for CodeBlockIterator {
             let start_line = content_str[..start_offset].lines().count();
             let end_line = content_str[..end_offset].lines().count();
 
-            let indent: String = content_str
+            let indent: usize = content_str
                 .get(..start_offset)
                 .and_then(|s| s.lines().last())
                 .unwrap_or("")
                 .chars()
                 .take_while(|c| c.is_whitespace())
-                .collect();
+                .count();
 
-            let start_line = start_line - (!indent.is_empty() && start_line > 0) as usize;
+            let start_line = start_line - (indent > 0) as usize;
 
             return Some(CodeBlock {
                 path: self.path.clone(),
