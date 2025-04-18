@@ -212,7 +212,6 @@ echo two
     assert!(output.status.success());
 }
 
-
 #[test]
 fn test_check_mode_fails_on_change_but_does_not_write() {
     let env = TestEnv::new(
