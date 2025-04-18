@@ -244,7 +244,6 @@ fn test_check_mode_fails_on_change_but_does_not_write() {
     assert_eq!(original, after, "Check mode must not alter the file");
 }
 
-
 #[test]
 fn test_output_mode_check_fails_on_error() {
     let env = TestEnv::new(
