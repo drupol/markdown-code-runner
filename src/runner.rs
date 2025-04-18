@@ -143,46 +143,44 @@ fn process_block(
 }
 
 fn apply_replacements(replacements: Vec<CodeBlock>) -> Result<()> {
-    let mut replacements_by_file: HashMap<PathBuf, Vec<(usize, usize, Vec<String>)>> =
-        HashMap::new();
+    let mut replacements_by_file: HashMap<PathBuf, Vec<CodeBlock>> = HashMap::new();
 
     for block in replacements {
         replacements_by_file
             .entry(block.path.clone())
             .or_default()
-            .push((
-                block.start_line,
-                block.end_line,
-                block.code.lines().map(String::from).collect(),
-            ));
+            .push(block);
     }
 
     replacements_by_file
         .into_par_iter()
-        .map(|(file_path, mut file_replacements)| {
-            let file_content = fs::read_to_string(&file_path)?;
-            let mut file_lines: Vec<String> = file_content.lines().map(String::from).collect();
+        .map(|(file_path, codeblocks)| -> Result<_> {
+            let mut file_lines: Vec<String> = fs::read_to_string(&file_path)?
+                .lines()
+                .map(String::from)
+                .collect();
 
-            file_replacements.sort_by_key(|(start, _, _)| std::cmp::Reverse(*start));
-
-            for (start, end, new_lines) in file_replacements {
-                let bounded_end = end.min(file_lines.len());
-                let bounded_start = start.min(bounded_end);
+            for codeblock in codeblocks {
+                let bounded_end = codeblock.end_line.min(file_lines.len());
+                let bounded_start = codeblock.start_line.min(bounded_end);
                 debug!(
                     "Applying replacement lines `{}:{}-{}`",
                     bounded_start,
                     bounded_end,
                     file_path.display()
                 );
-                file_lines.splice(bounded_start..bounded_end, new_lines);
+                file_lines.splice(
+                    bounded_start..bounded_end,
+                    codeblock.code.lines().map(|l| l.to_string()),
+                );
             }
 
             fs::write(&file_path, file_lines.join("\n") + "\n")?;
             info!("Updated: {}", file_path.display());
 
-            Ok::<_, anyhow::Error>(())
+            Ok(())
         })
-        .collect::<Result<Vec<_>, _>>()?;
+        .collect::<Result<(), _>>()?;
 
     Ok(())
 }
