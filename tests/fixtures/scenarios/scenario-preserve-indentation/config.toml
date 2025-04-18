@@ -1,0 +1,5 @@
+[presets.shell]
+language = "sh"
+command = ["echo", "hello"]
+input_mode = "stdin"
+output_mode = "replace"
