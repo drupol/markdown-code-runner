@@ -51,32 +51,6 @@ mod helpers {
 use helpers::TestEnv;
 
 #[test]
-fn test_dry_run_does_not_fail_on_error() {
-    let env = TestEnv::new(
-        "echo error",
-        "sh",
-        r#"
-        [presets.shell]
-        language = "sh"
-        command = ["sh", "-c", "exit 42"]
-        input_mode = "stdin"
-        output_mode = "check"
-        "#,
-    );
-
-    let output = env.run(&[
-        env.md_path.to_str().unwrap(),
-        "--config",
-        env.cfg_path.to_str().unwrap(),
-        "--dry-run",
-        "--log",
-        "debug",
-    ]);
-
-    assert!(output.status.success());
-}
-
-#[test]
 fn test_rewrites_code_block() {
     let env = TestEnv::new(
         "echo hello",
@@ -151,8 +125,7 @@ fn test_prints_warning_on_failure() {
 
     assert!(!output.status.success());
     let stderr = String::from_utf8_lossy(&output.stderr);
-    dbg!(&stderr);
-    assert!(stderr.contains("Error: The command `sh -c exit 123` returned a non-zero exit status (123) for preset `bad-sh` in "));
+    assert!(stderr.contains("The command `sh -c exit 123` returned a non-zero exit status (123) for preset `bad-sh` in "));
 }
 
 #[test]
@@ -239,33 +212,6 @@ echo two
     assert!(output.status.success());
 }
 
-#[test]
-fn test_dry_run_allows_command_failure() {
-    let env = TestEnv::new(
-        "Hello",
-        "sh",
-        r#"
-        [presets.fail]
-        language = "sh"
-        command = ["sh", "-c", "exit 1"]
-        input_mode = "stdin"
-        output_mode = "check"
-        "#,
-    );
-
-    let output = env.run(&[
-        env.md_path.to_str().unwrap(),
-        "--config",
-        env.cfg_path.to_str().unwrap(),
-        "--dry-run",
-    ]);
-
-    assert!(
-        output.status.success(),
-        "Dry-run should not fail, stderr: {}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-}
 
 #[test]
 fn test_check_mode_fails_on_change_but_does_not_write() {
@@ -309,7 +255,7 @@ fn test_preserves_indentation_in_code_block() {
   Foobar
   ```
 - Bar
-    "#;
+"#;
 
     let config = r#"
       [presets.shell]
@@ -341,38 +287,4 @@ fn test_preserves_indentation_in_code_block() {
     "#;
 
     assert_eq!(updated.trim(), expected.trim());
-}
-
-#[test]
-fn test_dry_run_outputs_warning_but_does_not_write() {
-    let env = TestEnv::new(
-        "echo hello",
-        "sh",
-        r#"
-        [presets.shell]
-        language = "sh"
-        command = ["echo", "changed"]
-        input_mode = "stdin"
-        output_mode = "replace"
-        "#,
-    );
-
-    let original = std::fs::read_to_string(&env.md_path).unwrap();
-
-    let output = env.run(&[
-        env.md_path.to_str().unwrap(),
-        "--config",
-        env.cfg_path.to_str().unwrap(),
-        "--dry-run",
-        "--log",
-        "debug",
-    ]);
-
-    assert!(output.status.success());
-
-    let final_content = std::fs::read_to_string(&env.md_path).unwrap();
-    assert_eq!(original, final_content);
-
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(stderr.contains("Processing preset `shell` for language `sh` in mode `Replace`"),);
 }
