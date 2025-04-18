@@ -1,16 +1,18 @@
 mod cli;
+mod codeblock;
 mod command;
 mod config;
 mod runner;
 
 use crate::config::AppSettings;
 use crate::runner::process;
+use anyhow::Result;
 use cli::Cli;
 
 use clap::Parser;
 use std::fs;
 
-fn main() -> anyhow::Result<()> {
+fn main() -> Result<()> {
     let args = Cli::parse();
     let mut log = args.log;
 
@@ -22,12 +24,10 @@ fn main() -> anyhow::Result<()> {
 
     let settings: AppSettings = toml::from_str(&fs::read_to_string(&args.config)?)?;
 
-    let results = process(args.path, &settings, args.check, args.dry_run);
+    let results = process(args.path, &settings, args.check);
 
-    let errors: Vec<_> = results.into_iter().filter_map(Result::err).collect();
-
-    if let Some(error) = errors.into_iter().next() {
-        anyhow::bail!(error);
+    if results.is_err() {
+        std::process::exit(1);
     }
 
     Ok(())

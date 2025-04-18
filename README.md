@@ -34,7 +34,7 @@ cargo build --release
 
 ### Via nix
 
-Available soon through `markdown-code-runner` package, the binary is called `mdcr`.
+Available soon through [`markdown-code-runner` package][markdown-code-runner package], the binary is called `mdcr`.
 
 ## Usage
 
@@ -148,28 +148,29 @@ You can use placeholders in the `command` field:
 - Blocks with unsupported languages are skipped with a warning.
 - `{file}` placeholder is **only available** in `input_mode: "file"` mode.
 
-## CI-Friendly `--check` Mode
+## CI Integration
 
-Use in your CI pipeline:
+Recommended usage in continuous integration:
 
 ```bash
 mdcr --config config.toml --check docs/
 ```
 
-It will:
+This runs all configured checks and returns a non-zero exit code if:
 
-- Run all matching commands
-- Return non-zero if the output differs or if any command fails
-- Skip rewriting the Markdown file
+- Output differs from the original
+- A command fails
 
-## Logging with `--log`
+The `--check` mode will not modify any files.
+
+## Logging
 
 The CLI option `--log` allows you to control the verbosity and destination of log messages emitted during execution.
 
 ### Usage
 
 ```bash
-mdcr --config config.toml --log info path/to/file.md
+mdcr --config config.toml --log debug path/to/file.md
 ```
 
 ### Available log levels
@@ -186,16 +187,7 @@ The logging system uses standard log levels, from most verbose to least:
 
 By default, if no `--log` option is provided, the logging level defaults to `warn`.
 
-### Example
-
-To show detailed debugging information, run:
-
-```bash
-mdcr --config config.toml --log debug docs/
-```
-
-This helps in troubleshooting command execution and seeing internal state details clearly.
-
 [github stars]: https://img.shields.io/github/stars/drupol/markdown-code-runner.svg?style=flat-square
 [donate github]: https://img.shields.io/badge/Sponsor-Github-brightgreen.svg?style=flat-square
 [5]: https://github.com/sponsors/drupol
+[markdown-code-runner package]: https://search.nixos.org/packages?channel=unstable&from=0&size=50&sort=relevance&type=packages&query=markdown-code-runner

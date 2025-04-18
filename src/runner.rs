@@ -1,213 +1,160 @@
-use crate::command::run_command;
 use crate::config::{AppSettings, OutputMode, PresetConfig};
 
+use crate::codeblock::{CodeBlock, CodeBlockIterator, CodeBlockProcessingResult};
+use crate::command::{command_to_string, run_command};
+
 use anyhow::anyhow;
-use log::{debug, error, info, warn};
-use pulldown_cmark::{CodeBlockKind, Event, Parser as MdParser, Tag};
+use anyhow::{Context, Result};
+use log::{debug, error, info};
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Output};
+use std::process::Output;
 use walkdir::WalkDir;
 
-enum PresetLoopAction {
-    Continue,
-    Break,
-}
+pub fn process(path: PathBuf, config: &AppSettings, check_only: bool) -> anyhow::Result<()> {
+    let files = collect_markdown_files(&path)?;
 
-type Replacement = (PathBuf, usize, usize, Vec<String>);
-type PresetResult = anyhow::Result<(PresetLoopAction, Option<Replacement>)>;
+    let results: Vec<anyhow::Result<()>> = files
+        .iter()
+        .map(|file| process_markdown_file(file, config, check_only))
+        .collect();
 
-pub struct PresetContext<'a> {
-    pub output: &'a Output,
-    pub preset: &'a str,
-    pub preset_cfg: &'a PresetConfig,
-    pub path: &'a Path,
-    pub code: &'a str,
-    pub block_code_headers: &'a str,
-    pub original_lines: &'a [&'a str],
-    pub start_line: &'a mut usize,
-    pub end_line: usize,
-    pub check_only: bool,
-    pub dry_run: bool,
-    pub global_result_mismatch: &'a mut bool,
-}
+    if results.iter().any(Result::is_err) {
+        return Err(anyhow!(""));
+    }
 
-pub fn process(
-    path: PathBuf,
-    config: &AppSettings,
-    check_only: bool,
-    dry_run: bool,
-) -> Vec<anyhow::Result<()>> {
-    collect_markdown_files(&path)
-        .par_iter()
-        .map(|file| process_markdown_file(file, config, check_only, dry_run))
-        .collect::<Vec<anyhow::Result<()>>>()
+    Ok(())
 }
 
 fn process_markdown_file(
     path: &Path,
     config: &AppSettings,
     check_only: bool,
-    dry_run: bool,
 ) -> anyhow::Result<()> {
-    let content = fs::read_to_string(path)?;
-    let original_lines: Vec<&str> = content.lines().collect();
+    let blocks: Vec<_> = CodeBlockIterator::new(path)?.collect();
 
-    let mut parser = MdParser::new(&content).into_offset_iter();
-    let mut replacements: Vec<(PathBuf, usize, usize, Vec<String>)> = Vec::new();
+    let results: Vec<CodeBlockProcessingResult> = blocks
+        .iter()
+        .rev()
+        .map(|block| process_block(path, config, block, check_only))
+        .collect();
 
-    let mut file_had_mismatches = false;
-    let file_had_command_failures = false;
+    let file_has_command_failures = results.iter().any(|r| r.had_command_failure);
+    let file_has_mismatches = results.iter().any(|r| r.had_mismatch);
+    let all_replacements: Vec<_> = results.into_iter().flat_map(|r| r.replacements).collect();
 
-    while let Some((event, range)) = parser.next() {
-        let Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(block_code_headers))) = event else {
-            continue;
-        };
+    if file_has_command_failures {
+        return Err(anyhow!(
+            "One or more commands failed in file `{}`",
+            path.display()
+        ));
+    }
 
-        let block_code_headers_str = block_code_headers.to_string();
-        let mut parts = block_code_headers.split_whitespace();
-        let lang = parts.next().unwrap_or_default();
+    if check_only && file_has_mismatches {
+        return Err(anyhow!(
+            "Checking some files failed, see the logs for details.",
+        ));
+    }
 
-        if block_code_headers.contains("mdcr-skip") {
-            debug!("mdcr-skip has been found in the code block header, skipping...");
-            continue;
-        }
+    if all_replacements.is_empty() {
+        debug!("No changes needed for file `{}`", path.display());
+        return Ok(());
+    }
 
-        let mut code = String::new();
-        let start_offset = range.start;
-        let mut end_offset = range.end;
+    apply_replacements(all_replacements)
+}
 
-        for (ev, r) in parser.by_ref() {
-            match ev {
-                Event::Text(text) => {
-                    code.push_str(&text);
-                    end_offset = r.end;
-                }
-                Event::End(_) => {
-                    end_offset = r.end;
-                    break;
-                }
-                _ => {}
-            }
-        }
+fn process_block(
+    path: &Path,
+    config: &AppSettings,
+    block: &CodeBlock,
+    check_only: bool,
+) -> CodeBlockProcessingResult {
+    let mut replacements = Vec::new();
+    let mut had_command_failure = false;
+    let mut had_mismatch = false;
 
-        let mut start_line = content[..start_offset].lines().count();
-        let end_line = content[..end_offset].lines().count();
-
-        'preset_loop: for (preset, preset_cfg) in &config.presets {
-            if preset_cfg.language.trim() != lang.trim() {
-                continue;
-            }
-
+    for (preset, preset_cfg) in &config.presets {
+        if preset_cfg.language.trim() != block.lang {
             debug!(
-                "Processing preset `{}` for language `{}` in mode `{:?}`",
-                preset, lang, preset_cfg.output_mode
+                "Skipping preset `{}` for language `{}` in `{}`",
+                preset,
+                block.lang,
+                path.display()
             );
+            continue;
+        }
 
-            match run_command(preset_cfg, &code) {
-                Ok((command, output)) => {
-                    if !output.status.success() {
-                        let msg = format!(
-                            "The command `{}` returned a non-zero exit status ({}) for preset `{}` in `{}`, `{:?}`",
-                            command_to_string(&command),
-                            output.status.code().unwrap(),
-                            preset,
-                            path.display(),
-                            String::from_utf8_lossy(&output.stderr).trim()
-                        );
+        debug!(
+            "Processing file `{}` and preset `{}` for language `{}` in `{:?}` mode...",
+            block.path.display(),
+            preset,
+            block.lang,
+            preset_cfg.output_mode
+        );
 
-                        if dry_run {
-                            warn!("{}", msg);
-                            continue 'preset_loop;
-                        }
-
-                        return Err(anyhow!("{}", msg));
-                    }
-
-                    let mut context = PresetContext {
-                        output: &output,
-                        preset,
-                        preset_cfg,
-                        path,
-                        code: &code,
-                        block_code_headers: &block_code_headers_str,
-                        original_lines: &original_lines,
-                        start_line: &mut start_line,
-                        end_line,
-                        check_only,
-                        dry_run,
-                        global_result_mismatch: &mut file_had_mismatches,
-                    };
-                    let (action, maybe_replacement) = handle_preset_result(&mut context)?;
-
-                    if let Some(replacement) = maybe_replacement {
-                        replacements.push(replacement);
-                    }
-
-                    match action {
-                        PresetLoopAction::Continue => continue 'preset_loop,
-                        PresetLoopAction::Break => break 'preset_loop,
-                    }
-                }
-                Err(e) => {
-                    let msg = format!(
-                        "Error executing command for preset `{}` in `{}`: {}",
+        match run_command(preset_cfg, &block.code) {
+            Ok((command, output)) => {
+                if !output.status.success() {
+                    error!(
+                        "The command `{}` returned a non-zero exit status ({}) for preset `{}` in `{}:{}-{}`, `{}`",
+                        command_to_string(&command),
+                        output.status.code().unwrap_or(-1),
                         preset,
                         path.display(),
-                        e
+                        block.start_line,
+                        block.end_line,
+                        String::from_utf8_lossy(&output.stderr).trim()
                     );
-
-                    if dry_run {
-                        warn!("{}", msg);
-                        continue 'preset_loop;
-                    }
-
-                    error!("{}", msg);
-
-                    return Err(anyhow!("{}", msg));
+                    had_command_failure = true;
+                    continue;
                 }
+
+                match handle_preset_result(&output, preset, preset_cfg, block, check_only) {
+                    Ok(Some(replacement)) => {
+                        had_mismatch = true;
+                        replacements.push(replacement);
+                    }
+                    Ok(None) => {}
+                    Err(_) => {
+                        had_mismatch = true;
+                    }
+                }
+            }
+            Err(e) => {
+                error!(
+                    "Error executing command for preset `{}` in `{}`: {}",
+                    preset,
+                    path.display(),
+                    e
+                );
+                had_command_failure = true;
             }
         }
     }
 
-    if replacements.is_empty() {
-        debug!("No changes needed for file: {}", path.display());
-        return Ok(());
+    CodeBlockProcessingResult {
+        replacements,
+        had_command_failure,
+        had_mismatch,
     }
+}
 
-    if dry_run {
-        return Ok(());
-    }
-
-    if check_only {
-        if file_had_command_failures {
-            return Err(anyhow!(
-                "Error(s) while executing commands in file: {}",
-                path.display()
-            ));
-        }
-
-        if file_had_mismatches {
-            return Err(anyhow!(
-                "Code block mismatch detected in file: {}",
-                path.display()
-            ));
-        }
-
-        debug!("Check mode passed for file: {}", path.display());
-        return Ok(());
-    }
-
+fn apply_replacements(replacements: Vec<CodeBlock>) -> Result<()> {
     let mut replacements_by_file: HashMap<PathBuf, Vec<(usize, usize, Vec<String>)>> =
         HashMap::new();
 
-    for (file_path, start, end, lines) in replacements {
+    for block in replacements {
         replacements_by_file
-            .entry(file_path)
+            .entry(block.path.clone())
             .or_default()
-            .push((start, end, lines));
+            .push((
+                block.start_line,
+                block.end_line,
+                block.code.lines().map(String::from).collect(),
+            ));
     }
 
     replacements_by_file
@@ -219,11 +166,10 @@ fn process_markdown_file(
             file_replacements.sort_by_key(|(start, _, _)| std::cmp::Reverse(*start));
 
             for (start, end, new_lines) in file_replacements {
-                let bounded_end = std::cmp::min(end, file_lines.len());
-                let bounded_start = std::cmp::min(start, bounded_end);
-
+                let bounded_end = end.min(file_lines.len());
+                let bounded_start = start.min(bounded_end);
                 debug!(
-                    "Applying replacement lines {}-{} in {}",
+                    "Applying replacement lines `{}:{}-{}`",
                     bounded_start,
                     bounded_end,
                     file_path.display()
@@ -238,170 +184,92 @@ fn process_markdown_file(
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    if file_had_command_failures {
-        warn!("Updated with command errors: {}", path.display());
-    }
-
     Ok(())
 }
 
-fn collect_markdown_files(path: &Path) -> Vec<PathBuf> {
-    if path.is_file() {
-        vec![path.to_path_buf()]
-    } else {
-        WalkDir::new(path)
-            .into_iter()
-            .filter_map(Result::ok)
-            .filter(|e| e.path().extension().and_then(|s| s.to_str()) == Some("md"))
-            .map(|e| e.into_path())
-            .collect()
+fn collect_markdown_files(path: &Path) -> Result<Vec<PathBuf>> {
+    if !path.try_exists()? {
+        return Err(anyhow!(
+            "Path does not exist or is not accessible: {}",
+            path.display()
+        ));
     }
+
+    if path.is_file() {
+        return Ok(vec![path.to_path_buf()]);
+    }
+
+    if !path.is_dir() {
+        return Err(anyhow!(
+            "Path is neither a file nor a directory: {}",
+            path.display()
+        ));
+    }
+
+    let entries = WalkDir::new(path)
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()
+        .with_context(|| format!("Failed to read directory: {}", path.display()))?
+        .into_iter()
+        .filter(|e| e.path().extension().and_then(|s| s.to_str()) == Some("md"))
+        .map(|e| e.into_path())
+        .collect();
+
+    Ok(entries)
 }
 
-fn handle_preset_result(ctx: &mut PresetContext) -> PresetResult {
-    match ctx.preset_cfg.output_mode {
-        OutputMode::Check => Ok((PresetLoopAction::Continue, None)),
+fn handle_preset_result(
+    output: &Output,
+    preset: &str,
+    preset_cfg: &PresetConfig,
+    block: &CodeBlock,
+    check_only: bool,
+) -> anyhow::Result<Option<CodeBlock>> {
+    match preset_cfg.output_mode {
+        OutputMode::Check => Ok(None),
         OutputMode::Replace => {
-            let mismatch = String::from_utf8_lossy(&ctx.output.stdout).trim() != ctx.code.trim();
-            *ctx.global_result_mismatch = *ctx.global_result_mismatch || mismatch;
+            let mismatch = String::from_utf8_lossy(&output.stdout).trim() != block.code.trim();
 
             if !mismatch {
-                debug!("Skipping code block, content matches output.");
-                return Ok((PresetLoopAction::Continue, None));
+                debug!(
+                    "Skipping code block, content matches output ({})",
+                    block.path.display()
+                );
+                return Ok(None);
             }
 
             let msg = format!(
-                "Code block mismatch detected in: {} (preset: {}, language: {})",
-                ctx.path.display(),
-                ctx.preset,
-                ctx.preset_cfg.language
+                "Code block mismatch detected in `{}:{}-{}` (preset: `{}`, language: `{}`)",
+                block.path.display(),
+                block.start_line,
+                block.end_line,
+                preset,
+                preset_cfg.language
             );
 
-            if ctx.dry_run {
-                warn!("{}", msg);
-                return Ok((PresetLoopAction::Continue, None));
-            }
-
-            if ctx.check_only {
-                return Err(anyhow!("{}", msg));
+            if check_only {
+                error!("{}", msg);
+                return Err(anyhow!(msg));
             }
 
             info!(
-                "Code block mismatch will be updated in: {}",
-                ctx.path.display()
+                "Code block mismatch will be updated in `{}`",
+                block.path.display()
             );
 
-            let indent = ctx
-                .original_lines
-                .get(*ctx.start_line)
-                .map(|line| {
-                    line.chars()
-                        .take_while(|c| c.is_whitespace())
-                        .collect::<String>()
-                })
-                .unwrap_or_default();
+            let updated_code = std::iter::once(format!("```{}", block.headers))
+                .chain(
+                    String::from_utf8_lossy(&output.stdout)
+                        .trim()
+                        .lines()
+                        .map(|l| l.to_string()),
+                )
+                .chain(std::iter::once("```".to_string()))
+                .map(|l| format!("{}{}", block.indent, l))
+                .collect::<Vec<String>>()
+                .join("\n");
 
-            let splice_start_line =
-                *ctx.start_line - (!indent.is_empty() && *ctx.start_line > 0) as usize;
-
-            let replacement_lines: Vec<String> =
-                std::iter::once(format!("```{}", ctx.block_code_headers))
-                    .chain(
-                        String::from_utf8_lossy(&ctx.output.stdout)
-                            .trim()
-                            .lines()
-                            .map(|l| l.to_string()),
-                    )
-                    .chain(std::iter::once("```".to_string()))
-                    .map(|l| format!("{}{}", indent, l))
-                    .collect();
-
-            Ok((
-                PresetLoopAction::Break,
-                Some((
-                    ctx.path.to_path_buf(),
-                    splice_start_line,
-                    ctx.end_line,
-                    replacement_lines,
-                )),
-            ))
+            Ok(Some(block.with_updated_code(updated_code)))
         }
-    }
-}
-
-fn command_to_string(cmd: &Command) -> String {
-    let program = cmd.get_program().to_string_lossy();
-    let args = cmd
-        .get_args()
-        .map(|arg| arg.to_string_lossy().to_string())
-        .collect::<Vec<String>>()
-        .join(" ");
-    format!("{} {}", program, args)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::config::{InputMode, OutputMode, PresetConfig};
-    #[cfg(unix)]
-    use std::os::unix::process::ExitStatusExt;
-    #[cfg(windows)]
-    use std::os::windows::process::ExitStatusExt;
-    use std::path::PathBuf;
-    use std::process::{ExitStatus, Output};
-
-    fn mock_output(stdout: &str, stderr: &str, status_code: i32) -> Output {
-        Output {
-            stdout: stdout.as_bytes().to_vec(),
-            stderr: stderr.as_bytes().to_vec(),
-            status: ExitStatus::from_raw(status_code),
-        }
-    }
-
-    #[test]
-    fn test_handle_preset_result_replacement_generated() {
-        let preset = "foo";
-        let preset_cfg = PresetConfig {
-            language: "sh".into(),
-            command: vec!["echo".into(), "Hello".into()],
-            input_mode: InputMode::Stdin,
-            output_mode: OutputMode::Replace,
-        };
-
-        let output = mock_output("Hello\n", "", 0); // success = exit code 0
-        let code = "echo something";
-        let block_code_headers = "sh";
-        let path = PathBuf::from("test.md");
-        let original_lines = vec!["```sh", "echo something", "```"];
-        let mut start_line = 1;
-        let end_line = 2;
-        let check_only = false;
-        let dry_run = false;
-        let mut mismatch = false;
-
-        let mut ctx = PresetContext {
-            output: &output,
-            preset,
-            preset_cfg: &preset_cfg,
-            path: &path,
-            code,
-            block_code_headers,
-            original_lines: &original_lines,
-            start_line: &mut start_line,
-            end_line,
-            check_only,
-            dry_run,
-            global_result_mismatch: &mut mismatch,
-        };
-        let (action, replacement_opt) = handle_preset_result(&mut ctx).unwrap();
-
-        assert!(mismatch);
-        assert!(matches!(action, PresetLoopAction::Break));
-        let (rep_path, rep_start, rep_end, lines) =
-            replacement_opt.expect("Expected a replacement");
-        assert_eq!(rep_path, path);
-        assert_eq!(rep_start, 1);
-        assert_eq!(rep_end, end_line);
-        assert!(lines.iter().any(|l| l.contains("Hello")));
     }
 }

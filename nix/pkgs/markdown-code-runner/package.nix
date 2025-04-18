@@ -13,11 +13,18 @@ rustPlatform.buildRustPackage {
     fileset = lib.fileset.unions [
       ../../../Cargo.toml
       ../../../Cargo.lock
+      ../../../tests
       ../../../src
     ];
   };
 
   cargoHash = "sha256-HOJCnuzd6i4v1SpR4jstlpNkvSgH/4kvvE6Lsr4cgbI=";
+
+  # Using `dontUseCargoParallelTests=true` doesn't work.
+  # I should report an issue upstream
+  checkFlags = [
+    "--test-threads=1"
+  ];
 
   meta = {
     description = "A configurable Markdown code runner that executes and optionally replaces code blocks using external commands";

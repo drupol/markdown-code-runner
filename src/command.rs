@@ -84,3 +84,13 @@ fn expand_command_vec(template: &[String], file: Option<&Path>, lang: &str) -> V
         })
         .collect()
 }
+
+pub fn command_to_string(cmd: &Command) -> String {
+    let program = cmd.get_program().to_string_lossy();
+    let args = cmd
+        .get_args()
+        .map(|arg| arg.to_string_lossy().to_string())
+        .collect::<Vec<String>>()
+        .join(" ");
+    format!("{} {}", program, args)
+}
