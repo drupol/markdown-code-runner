@@ -34,7 +34,7 @@ cargo build --release
 
 ### Via nix
 
-Available soon through `markdown-code-runner` package, the binary is called `mdcr`.
+Available soon through [`markdown-code-runner` package][markdown-code-runner package], the binary is called `mdcr`.
 
 ## Usage
 
@@ -190,3 +190,4 @@ By default, if no `--log` option is provided, the logging level defaults to `war
 [github stars]: https://img.shields.io/github/stars/drupol/markdown-code-runner.svg?style=flat-square
 [donate github]: https://img.shields.io/badge/Sponsor-Github-brightgreen.svg?style=flat-square
 [5]: https://github.com/sponsors/drupol
+[markdown-code-runner package]: https://search.nixos.org/packages?channel=unstable&from=0&size=50&sort=relevance&type=packages&query=markdown-code-runner
