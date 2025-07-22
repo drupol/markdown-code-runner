@@ -5,14 +5,16 @@ echo outdated
 ```
 
 - list
+
 ```sh
 echo outdated
 ```
 
 - list
- ```sh
- echo outdated
- ```
+
+```sh
+echo outdated
+```
 
 - list
   ```sh

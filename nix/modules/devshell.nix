@@ -1,6 +1,13 @@
-{ ... }:
-
 {
+  inputs,
+  ...
+}:
+{
+  imports = [
+    inputs.make-shell.flakeModules.default
+    inputs.git-hooks.flakeModule
+  ];
+
   perSystem =
     { pkgs, ... }:
     {
@@ -8,13 +15,13 @@
         commitizen.enable = true;
       };
 
-      devShells.default = pkgs.mkShell {
+      make-shells.default = {
         packages = with pkgs; [
-            cargo
-            clippy
-            rust-analyzer
-            rustc
-            rustfmt
+          cargo
+          clippy
+          rust-analyzer
+          rustc
+          rustfmt
         ];
 
         shellHook = ''

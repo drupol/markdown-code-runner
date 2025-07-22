@@ -125,7 +125,9 @@ fn test_prints_warning_on_failure() {
 
     assert!(!output.status.success());
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(stderr.contains("The command `sh -c exit 123` returned a non-zero exit status (123) for preset `bad-sh` in "));
+    assert!(stderr.contains(
+        "The command `sh -c exit 123` returned a non-zero exit status (123) for preset `bad-sh` in "
+    ));
 }
 
 #[test]

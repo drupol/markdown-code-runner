@@ -1,5 +1,3 @@
-{ ... }:
-
 {
   perSystem =
     { config, ... }:

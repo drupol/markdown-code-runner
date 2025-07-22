@@ -2,11 +2,12 @@
   inputs,
   lib,
   rustPlatform,
+  versionCheckHook,
 }:
 
 rustPlatform.buildRustPackage {
   pname = "markdown-code-runner";
-  version = (lib.importTOML "${inputs.self}/Cargo.toml").package.version;
+  inherit ((lib.importTOML "${inputs.self}/Cargo.toml").package) version;
 
   src = lib.fileset.toSource {
     root = ../../..;
@@ -21,6 +22,10 @@ rustPlatform.buildRustPackage {
   cargoHash = "sha256-HOJCnuzd6i4v1SpR4jstlpNkvSgH/4kvvE6Lsr4cgbI=";
 
   dontUseCargoParallelTests = true;
+
+  doInstallCheck = true;
+  nativeInstallCheckInputs = [ versionCheckHook ];
+  versionCheckProgramArg = "--version";
 
   meta = {
     description = "A configurable Markdown code runner that executes and optionally replaces code blocks using external commands";
