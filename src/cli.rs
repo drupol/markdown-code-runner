@@ -11,7 +11,8 @@ use std::path::PathBuf;
 )]
 pub struct Cli {
     /// Path to the Markdown file or directory
-    pub path: PathBuf,
+    #[arg(required = true)]
+    pub paths: Vec<std::path::PathBuf>,
 
     /// Path to the config JSON file
     #[arg(long)]
