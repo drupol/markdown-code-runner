@@ -24,9 +24,14 @@ fn main() -> Result<()> {
 
     let settings: AppSettings = toml::from_str(&fs::read_to_string(&args.config)?)?;
 
-    let results = process(args.path, &settings, args.check);
+    let mut had_error = false;
+    for path in &args.paths {
+        if let Err(_e) = process(path.clone(), &settings, args.check) {
+            had_error = true;
+        }
+    }
 
-    if results.is_err() {
+    if had_error {
         std::process::exit(1);
     }
 
