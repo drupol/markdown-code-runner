@@ -10,11 +10,10 @@ mod helpers {
     impl TestEnv {
         pub fn new(markdown: &str, lang: &str, config_json: &str) -> Self {
             let markdown = format!(
-                r#"```{}
-{}
+                r#"```{lang}
+{markdown}
 ```
-"#,
-                lang, markdown
+"#
             );
 
             Self::from_raw_markdown(&markdown, config_json)

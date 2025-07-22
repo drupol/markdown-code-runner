@@ -18,9 +18,9 @@ fn test_all_scenarios_with_input_reset_and_cleanup() {
         let test = scenario_path.join("test.md");
         let expected = scenario_path.join("test.expected.md");
 
-        assert!(config.exists(), "Missing config.toml in `{}`", name);
-        assert!(input.exists(), "Missing test.input.md in `{}`", name);
-        assert!(expected.exists(), "Missing test.expected.md in `{}`", name);
+        assert!(config.exists(), "Missing config.toml in `{name}`");
+        assert!(input.exists(), "Missing test.input.md in `{name}`");
+        assert!(expected.exists(), "Missing test.expected.md in `{name}`");
 
         fs::copy(&input, &test).expect("Failed to copy test.input.md -> test.md");
 
@@ -49,6 +49,6 @@ fn test_all_scenarios_with_input_reset_and_cleanup() {
 
         fs::remove_file(&test).expect("Failed to delete test.md");
 
-        assert_eq!(actual.trim(), expected_str.trim(), "Mismatch in `{}`", name);
+        assert_eq!(actual.trim(), expected_str.trim(), "Mismatch in `{name}`");
     }
 }

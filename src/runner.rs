@@ -246,7 +246,7 @@ fn handle_preset_result(
             );
 
             if check_only {
-                error!("{}", msg);
+                error!("{msg}");
                 return Err(anyhow!(msg));
             }
 

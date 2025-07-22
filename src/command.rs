@@ -51,7 +51,7 @@ fn run_command_with_file(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
-    debug!("Executing command {:?}", args);
+    debug!("Executing command {args:?}");
     let output = cmd.output()?;
 
     Ok((cmd, output))
@@ -92,5 +92,5 @@ pub fn command_to_string(cmd: &Command) -> String {
         .map(|arg| arg.to_string_lossy().to_string())
         .collect::<Vec<String>>()
         .join(" ");
-    format!("{} {}", program, args)
+    format!("{program} {args}")
 }
