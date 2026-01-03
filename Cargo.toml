@@ -1,6 +1,6 @@
 [package]
 name = "markdown-code-runner"
-version = "0.3.1"
+version = "0.3.2"
 edition = "2021"
 description = "Validate, execute and optionally rewrite code blocks in Markdown files based on arbitrary commands"
 readme = "README.md"
