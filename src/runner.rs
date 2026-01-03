@@ -16,13 +16,14 @@ use walkdir::WalkDir;
 pub fn process(path: PathBuf, config: &AppSettings, check_only: bool) -> anyhow::Result<()> {
     let files = collect_markdown_files(&path)?;
 
+    // Process files in parallel
     let results: Vec<anyhow::Result<()>> = files
-        .iter()
+        .par_iter()
         .map(|file| process_markdown_file(file, config, check_only))
         .collect();
 
     if results.iter().any(Result::is_err) {
-        return Err(anyhow!(""));
+        return Err(anyhow!("One or more files failed to process"));
     }
 
     Ok(())
