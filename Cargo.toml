@@ -16,14 +16,14 @@ keywords = [
 
 [dependencies]
 anyhow = "1.0"
-clap = { version = "4.0", features = ["cargo", "derive"] }
+clap = { version = "4.5", features = ["cargo", "derive"] }
 env_logger = "0.11.8"
 log = "0.4.27"
 pulldown-cmark = { version = "0.13.0", default-features = false }
-rayon = "1.10.0"
+rayon = "1.11.0"
 serde = { version = "1.0", features = ["derive"] }
 tempfile = "3"
-toml = { version = "0.8.20", features = ["parse"] }
+toml = { version = "0.9", features = ["parse"] }
 walkdir = "2.5.0"
 
 [[bin]]

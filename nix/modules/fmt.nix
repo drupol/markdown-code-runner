@@ -15,22 +15,8 @@
         yamlfmt.enable = true;
       };
       settings = {
-        on-unmatched = "fatal";
-        global.excludes = [
-          "*.envrc"
-          ".editorconfig"
-          ".prettierrc"
-          "*.crt"
-          "*.directory"
-          "*.face"
-          "*.fish"
-          "*.png"
-          "*.toml"
-          "*.svg"
-          "*.xml"
-          "*/.gitignore"
-          "LICENSE"
-        ];
+        no-cache = true;
+        on-unmatched = "warn";
       };
     };
   };

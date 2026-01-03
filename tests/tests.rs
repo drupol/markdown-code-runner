@@ -24,7 +24,7 @@ mod helpers {
                 .prefix("mdcr-test-")
                 .tempdir()
                 .unwrap()
-                .into_path();
+                .keep();
             let md_path = dir.join("test.md");
             let cfg_path = dir.join("config.json");
 
