@@ -1,10 +1,12 @@
 {
   inputs = {
     nixpkgs.url = "github:/nixos/nixpkgs/nixos-unstable";
-    systems.url = "github:nix-systems/default";
 
     flake-parts.url = "github:hercules-ci/flake-parts";
     flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs";
+
+    flake-compat.url = "github:NixOS/flake-compat";
+    flake-compat.flake = false;
 
     git-hooks.url = "github:cachix/git-hooks.nix";
     git-hooks.inputs.nixpkgs.follows = "nixpkgs";
