@@ -1,7 +1,5 @@
-use pulldown_cmark::{CodeBlockKind, Event, OffsetIter, Parser as MdParser, Tag};
-use std::fs;
+use pulldown_cmark::{CodeBlockKind, Event, Parser as MdParser, Tag, TagEnd};
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub struct CodeBlock {
@@ -23,45 +21,25 @@ impl CodeBlock {
     }
 }
 
-pub struct CodeBlockIterator {
-    path: PathBuf,
-    content: Rc<str>,
-    parser: OffsetIter<'static>,
-}
-
 pub struct CodeBlockProcessingResult {
     pub replacements: Vec<CodeBlock>,
     pub had_command_failure: bool,
     pub had_mismatch: bool,
 }
 
-impl CodeBlockIterator {
-    pub fn new(path: &Path) -> anyhow::Result<Self> {
-        let content: Rc<str> = Rc::from(fs::read_to_string(path)?);
+pub fn parse_code_blocks(path: &Path, content: &str) -> Vec<CodeBlock> {
+    let mut blocks = Vec::new();
+    let mut parser = MdParser::new(content).into_offset_iter();
 
-        let content_static: &'static str =
-            unsafe { std::mem::transmute::<&str, &'static str>(content.as_ref()) };
-
-        let parser = MdParser::new(content_static).into_offset_iter();
-
-        Ok(CodeBlockIterator {
-            path: path.to_path_buf(),
-            content,
-            parser,
-        })
-    }
-}
-
-impl Iterator for CodeBlockIterator {
-    type Item = CodeBlock;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        while let Some((event, range)) = self.parser.next() {
-            let Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(headers))) = event else {
-                continue;
-            };
-
+    while let Some((event, range)) = parser.next() {
+        if let Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(headers))) = event {
             if headers.contains("mdcr-skip") {
+                // We need to consume until the end of this block
+                for (e, _) in &mut parser {
+                    if let Event::End(TagEnd::CodeBlock) = e {
+                        break;
+                    }
+                }
                 continue;
             }
 
@@ -75,13 +53,13 @@ impl Iterator for CodeBlockIterator {
             let start_offset = range.start;
             let mut end_offset = range.end;
 
-            for (event, r) in &mut self.parser {
+            for (event, r) in &mut parser {
                 match event {
                     Event::Text(text) => {
                         code.push_str(&text);
                         end_offset = r.end;
                     }
-                    Event::End(_) => {
+                    Event::End(TagEnd::CodeBlock) => {
                         end_offset = r.end;
                         break;
                     }
@@ -89,11 +67,12 @@ impl Iterator for CodeBlockIterator {
                 }
             }
 
-            let content_str = self.content.as_ref();
-            let start_line = content_str[..start_offset].lines().count();
-            let end_line = content_str[..end_offset].lines().count();
+            // Calculate lines
+            let start_line = content[..start_offset].lines().count();
+            let end_line = content[..end_offset].lines().count();
 
-            let indent: usize = content_str
+            // Calculate indentation
+            let indent: usize = content
                 .get(..start_offset)
                 .and_then(|s| s.lines().last())
                 .unwrap_or("")
@@ -101,10 +80,11 @@ impl Iterator for CodeBlockIterator {
                 .take_while(|c| c.is_whitespace())
                 .count();
 
+            // Correction for 1-based indexing expectations if any, or just consistent logic
             let start_line = start_line - (indent > 0) as usize;
 
-            return Some(CodeBlock {
-                path: self.path.clone(),
+            blocks.push(CodeBlock {
+                path: path.to_path_buf(),
                 lang,
                 headers: headers.to_string(),
                 code,
@@ -113,7 +93,6 @@ impl Iterator for CodeBlockIterator {
                 indent,
             });
         }
-
-        None
     }
+    blocks
 }

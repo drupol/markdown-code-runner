@@ -1,6 +1,6 @@
 use crate::config::{AppSettings, OutputMode, PresetConfig};
 
-use crate::codeblock::{CodeBlock, CodeBlockIterator, CodeBlockProcessingResult};
+use crate::codeblock::{CodeBlock, CodeBlockProcessingResult};
 use crate::command::{command_to_string, run_command};
 
 use anyhow::anyhow;
@@ -33,7 +33,8 @@ fn process_markdown_file(
     config: &AppSettings,
     check_only: bool,
 ) -> anyhow::Result<()> {
-    let blocks: Vec<_> = CodeBlockIterator::new(path)?.collect();
+    let content = fs::read_to_string(path)?;
+    let blocks = crate::codeblock::parse_code_blocks(path, &content);
 
     let results: Vec<CodeBlockProcessingResult> = blocks
         .iter()
