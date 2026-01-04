@@ -79,7 +79,7 @@ fn process_block(
     let mut had_mismatch = false;
 
     for (preset, preset_cfg) in &config.presets {
-        if preset_cfg.language.trim() != block.lang {
+        if !preset_cfg.languages.iter().any(|l| l.trim() == block.lang) {
             debug!(
                 "Skipping preset `{}` for language `{}` in `{}`",
                 preset,
@@ -97,7 +97,7 @@ fn process_block(
             preset_cfg.output_mode
         );
 
-        match run_command(preset_cfg, &block.code) {
+        match run_command(preset_cfg, &block.code, &block.lang) {
             Ok((command, output)) => {
                 if !output.status.success() {
                     error!(
@@ -244,7 +244,7 @@ fn handle_preset_result(
                 block.start_line,
                 block.end_line,
                 preset,
-                preset_cfg.language
+                block.lang
             );
 
             if check_only {
