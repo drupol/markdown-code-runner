@@ -1,5 +1,4 @@
 {
-  inputs,
   lib,
   rustPlatform,
   versionCheckHook,
@@ -7,7 +6,7 @@
 
 rustPlatform.buildRustPackage {
   pname = "markdown-code-runner";
-  inherit ((lib.importTOML "${inputs.self}/Cargo.toml").package) version;
+  version = "0.4.0";
 
   src = lib.fileset.toSource {
     root = ../../..;
