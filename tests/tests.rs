@@ -461,3 +461,65 @@ fn test_multiple_files_in_dir_one_is_fixed() {
     let updated_ok = fs::read_to_string(&file_ok).unwrap();
     assert_eq!(updated_ok.trim(), "```sh\nhello\n```");
 }
+
+#[test]
+fn test_multiple_languages_preset() {
+    let env = TestEnv::from_raw_markdown(
+        r#"
+```lang1
+echo lang1
+```
+
+```lang2
+echo lang2
+```
+        "#,
+        r#"
+        [presets.multi]
+        languages = ["lang1", "lang2"]
+        command = ["echo", "{lang}"]
+        input_mode = "stdin"
+        output_mode = "replace"
+        "#,
+    );
+
+    let output = env.run(&[
+        env.md_path.to_str().unwrap(),
+        "--config",
+        env.cfg_path.to_str().unwrap(),
+    ]);
+
+    assert!(output.status.success());
+    let updated = std::fs::read_to_string(&env.md_path).unwrap();
+    // The command echoes {lang}, so we expect "lang1" and "lang2" in the output
+    assert!(updated.contains("lang1"));
+    assert!(updated.contains("lang2"));
+}
+
+#[test]
+fn test_legacy_language_field() {
+    let env = TestEnv::from_raw_markdown(
+        r#"
+```legacy
+echo leg
+```
+        "#,
+        r#"
+        [presets.legacy]
+        language = "legacy"
+        command = ["echo", "worked"]
+        input_mode = "stdin"
+        output_mode = "replace"
+        "#,
+    );
+
+    let output = env.run(&[
+        env.md_path.to_str().unwrap(),
+        "--config",
+        env.cfg_path.to_str().unwrap(),
+    ]);
+
+    assert!(output.status.success());
+    let updated = std::fs::read_to_string(&env.md_path).unwrap();
+    assert!(updated.contains("worked"));
+}

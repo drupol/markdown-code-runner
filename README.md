@@ -64,7 +64,7 @@ Save this file as `config.toml`:
 
 ```toml
 [presets.ruff-format]
-language = "python"
+languages = ["python", "py"]
 command = ["ruff", "format", "-"]
 
 [presets.nixfmt]

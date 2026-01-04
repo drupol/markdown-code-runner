@@ -7,10 +7,14 @@ use tempfile::NamedTempFile;
 
 use crate::config::{InputMode, PresetConfig};
 
-pub fn run_command(cfg: &PresetConfig, input: &str) -> anyhow::Result<(Command, Output)> {
+pub fn run_command(
+    cfg: &PresetConfig,
+    input: &str,
+    lang: &str,
+) -> anyhow::Result<(Command, Output)> {
     match cfg.input_mode {
-        InputMode::Stdin => run_command_with_stdin(&cfg.command, input, &cfg.language),
-        InputMode::File => run_command_with_file(&cfg.command, input, &cfg.language),
+        InputMode::Stdin => run_command_with_stdin(&cfg.command, input, lang),
+        InputMode::File => run_command_with_file(&cfg.command, input, lang),
     }
 }
 
