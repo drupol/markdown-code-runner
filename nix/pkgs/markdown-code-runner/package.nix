@@ -6,7 +6,7 @@
 
 rustPlatform.buildRustPackage {
   pname = "markdown-code-runner";
-  version = "0.4.0";
+  version = "0.4.2";
 
   src = lib.fileset.toSource {
     root = ../../..;
@@ -18,7 +18,7 @@ rustPlatform.buildRustPackage {
     ];
   };
 
-  cargoHash = "sha256-Q2KhNPrUU8X95Z7qsWqwkFDzJlLAmpH1Fn5f47fYr1o=";
+  cargoHash = "sha256-aUbavxCObgZlhlv5DyoC/yAq79UM4tR77jwTsVqN4yU=";
 
   dontUseCargoParallelTests = true;
 
