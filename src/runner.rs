@@ -211,7 +211,12 @@ fn collect_markdown_files(path: &Path) -> Result<Vec<PathBuf>> {
         .collect::<Result<Vec<_>, _>>()
         .with_context(|| format!("Failed to read directory: {}", path.display()))?
         .into_iter()
-        .filter(|e| e.path().extension().and_then(|s| s.to_str()) == Some("md"))
+        .filter(|e| {
+            matches!(
+                e.path().extension().and_then(|s| s.to_str()),
+                Some("md") | Some("mdx")
+            )
+        })
         .map(|e| e.into_path())
         .collect();
 
