@@ -1,6 +1,10 @@
 mod helpers {
     use std::fs;
     use std::path::PathBuf;
+    use std::process::Output;
+    use std::sync::Mutex;
+
+    static TEST_BINARY_LOCK: Mutex<()> = Mutex::new(());
 
     pub struct TestEnv {
         pub md_path: PathBuf,
@@ -34,20 +38,26 @@ mod helpers {
             Self { md_path, cfg_path }
         }
 
-        pub fn run(&self, args: &[&str]) -> std::process::Output {
+        pub fn run(&self, args: &[&str]) -> Output {
             let _ = env_logger::builder().is_test(true).try_init();
 
-            let mut full_args = vec!["run", "--quiet", "--"];
-            full_args.extend_from_slice(args);
-            std::process::Command::new("cargo")
-                .args(full_args)
-                .output()
-                .unwrap()
+            run_mdcr(args)
         }
+    }
+
+    pub fn run_mdcr(args: &[&str]) -> Output {
+        let _guard = TEST_BINARY_LOCK
+            .lock()
+            .unwrap_or_else(|err| err.into_inner());
+
+        std::process::Command::new(env!("CARGO_BIN_EXE_mdcr"))
+            .args(args)
+            .output()
+            .unwrap()
     }
 }
 
-use helpers::TestEnv;
+use helpers::{TestEnv, run_mdcr};
 
 #[test]
 fn test_rewrites_code_block() {
@@ -392,18 +402,12 @@ fn test_multiple_files_in_dir_one_with_issue() {
     )
     .unwrap();
 
-    let output = std::process::Command::new("cargo")
-        .args([
-            "run",
-            "--quiet",
-            "--",
-            dir.path().to_str().unwrap(),
-            "--check",
-            "--config",
-            config_path.to_str().unwrap(),
-        ])
-        .output()
-        .unwrap();
+    let output = run_mdcr(&[
+        dir.path().to_str().unwrap(),
+        "--check",
+        "--config",
+        config_path.to_str().unwrap(),
+    ]);
 
     assert!(!output.status.success());
 
@@ -440,17 +444,11 @@ fn test_multiple_files_in_dir_one_is_fixed() {
     )
     .unwrap();
 
-    let output = std::process::Command::new("cargo")
-        .args([
-            "run",
-            "--quiet",
-            "--",
-            dir.path().to_str().unwrap(),
-            "--config",
-            config_path.to_str().unwrap(),
-        ])
-        .output()
-        .unwrap();
+    let output = run_mdcr(&[
+        dir.path().to_str().unwrap(),
+        "--config",
+        config_path.to_str().unwrap(),
+    ]);
 
     assert!(output.status.success());
 

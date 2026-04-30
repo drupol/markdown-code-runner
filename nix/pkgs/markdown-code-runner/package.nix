@@ -6,7 +6,9 @@
 
 rustPlatform.buildRustPackage {
   pname = "markdown-code-runner";
-  version = "0.4.2";
+  version = "0.5.0";
+
+  __structuredAttrs = true;
 
   src = lib.fileset.toSource {
     root = ../../..;
@@ -18,13 +20,12 @@ rustPlatform.buildRustPackage {
     ];
   };
 
-  cargoHash = "sha256-aUbavxCObgZlhlv5DyoC/yAq79UM4tR77jwTsVqN4yU=";
+  cargoHash = "sha256-XnyVND55U12h2zNX+TD/ujCQ8SKb2n2M9LUQSR8wabs=";
 
   dontUseCargoParallelTests = true;
 
   doInstallCheck = true;
   nativeInstallCheckInputs = [ versionCheckHook ];
-  versionCheckProgramArg = "--version";
 
   meta = {
     description = "A configurable Markdown code runner that executes and optionally replaces code blocks using external commands";

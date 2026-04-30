@@ -1,17 +1,16 @@
 [package]
 name = "markdown-code-runner"
-version = "0.4.2"
-edition = "2021"
+version = "0.5.0"
+edition = "2024"
 description = "Validate, execute and optionally rewrite code blocks in Markdown files based on arbitrary commands"
 readme = "README.md"
 license = "EUPL-1.2"
 repository = "https://github.com/drupol/markdown-code-runner"
 keywords = [
-  "code",
-  "command-line-utilities",
+  "cli",
   "markdown",
   "parser",
-  "text-processing",
+  "linter",
 ]
 
 [dependencies]
@@ -19,7 +18,7 @@ anyhow = "1.0"
 clap = { version = "4.6", features = ["cargo", "derive"] }
 env_logger = "0.11.10"
 log = "0.4.29"
-pulldown-cmark = { version = "0.13.3", default-features = false }
+pulldown-cmark-codeblock = { version = "0.1.0" }
 rayon = "1.11.0"
 serde = { version = "1.0", features = ["derive"] }
 tempfile = "3"
