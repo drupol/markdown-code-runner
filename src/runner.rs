@@ -79,11 +79,15 @@ fn process_block(
     let mut had_mismatch = false;
 
     for (preset, preset_cfg) in &config.presets {
-        if !preset_cfg.languages.iter().any(|l| l.trim() == block.lang) {
+        if !preset_cfg
+            .languages
+            .iter()
+            .any(|l| l.trim() == block.language())
+        {
             debug!(
                 "Skipping preset `{}` for language `{}` in `{}`",
                 preset,
-                block.lang,
+                block.language(),
                 path.display()
             );
             continue;
@@ -93,11 +97,11 @@ fn process_block(
             "Processing file `{}` and preset `{}` for language `{}` in `{:?}` mode...",
             block.path.display(),
             preset,
-            block.lang,
+            block.language(),
             preset_cfg.output_mode
         );
 
-        match run_command(preset_cfg, &block.code, &block.lang) {
+        match run_command(preset_cfg, block.source(), block.language()) {
             Ok((command, output)) => {
                 if !output.status.success() {
                     error!(
@@ -106,8 +110,8 @@ fn process_block(
                         output.status.code().unwrap_or(-1),
                         preset,
                         path.display(),
-                        block.start_line,
-                        block.end_line,
+                        block.start_line(),
+                        block.end_line(),
                         String::from_utf8_lossy(&output.stderr).trim()
                     );
                     had_command_failure = true;
@@ -163,8 +167,8 @@ fn apply_replacements(replacements: Vec<CodeBlock>) -> Result<()> {
                 .collect();
 
             for codeblock in codeblocks {
-                let bounded_end = codeblock.end_line.min(file_lines.len());
-                let bounded_start = codeblock.start_line.min(bounded_end);
+                let bounded_end = codeblock.end_line().min(file_lines.len());
+                let bounded_start = codeblock.start_line().min(bounded_end);
                 debug!(
                     "Applying replacement lines `{}:{}-{}`",
                     bounded_start,
@@ -173,7 +177,10 @@ fn apply_replacements(replacements: Vec<CodeBlock>) -> Result<()> {
                 );
                 file_lines.splice(
                     bounded_start..bounded_end,
-                    codeblock.code.lines().map(|l| l.to_string()),
+                    codeblock
+                        .replacement_source()
+                        .lines()
+                        .map(|l| l.to_string()),
                 );
             }
 
@@ -233,7 +240,7 @@ fn handle_preset_result(
     match preset_cfg.output_mode {
         OutputMode::Check => Ok(None),
         OutputMode::Replace => {
-            let mismatch = String::from_utf8_lossy(&output.stdout).trim() != block.code.trim();
+            let mismatch = String::from_utf8_lossy(&output.stdout).trim() != block.source().trim();
 
             if !mismatch {
                 debug!(
@@ -246,10 +253,10 @@ fn handle_preset_result(
             let msg = format!(
                 "Code block mismatch detected in `{}:{}-{}` (preset: `{}`, language: `{}`)",
                 block.path.display(),
-                block.start_line,
-                block.end_line,
+                block.start_line(),
+                block.end_line(),
                 preset,
-                block.lang
+                block.language()
             );
 
             if check_only {
@@ -262,7 +269,7 @@ fn handle_preset_result(
                 block.path.display()
             );
 
-            let updated_code = std::iter::once(format!("```{}", block.headers))
+            let updated_code = std::iter::once(format!("```{}", block.info_string()))
                 .chain(
                     String::from_utf8_lossy(&output.stdout)
                         .trim()
@@ -271,7 +278,7 @@ fn handle_preset_result(
                 )
                 .chain(std::iter::once("```".to_string()))
                 .map(|l| {
-                    format!("{:indent$}{}", "", l, indent = block.indent)
+                    format!("{:indent$}{}", "", l, indent = block.indent())
                         .trim_end()
                         .to_string()
                 })

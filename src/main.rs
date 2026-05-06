@@ -4,10 +4,10 @@ mod command;
 mod config;
 mod runner;
 
-use crate::config::AppSettings;
-use crate::runner::process;
 use anyhow::Result;
 use cli::Cli;
+use config::AppSettings;
+use runner::process;
 
 use clap::Parser;
 use std::fs;

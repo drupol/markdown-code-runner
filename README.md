@@ -1,5 +1,7 @@
-![GitHub stars][github stars]
-[![Donate!][donate github]][5]
+![GitHub stars][GitHub stars]
+[![Crates.io Version][Crates.io Version]][markdown-code-runner crates]
+[![Crates.io License][Crates.io License]][markdown-code-runner crates]
+[![Donate!][Donate!]][sponsor link]
 
 # Markdown-code-runner
 
@@ -25,26 +27,45 @@ Useful for:
 
 ## Installation
 
-```bash
-git clone https://github.com/drupol/markdown-code-runner
-cd markdown-code-runner
-cargo build --release
-./target/release/mdcr --help
+### Via Cargo
+
+You can install the binary with Cargo:
+
+```sh
+cargo install markdown-code-runner
 ```
 
-### Via nix
+### Via Nixpkgs
 
-Available soon through [`markdown-code-runner` package][markdown-code-runner package], the binary is called `mdcr`.
+Available via the [`markdown-code-runner` package], the binary is called `mdcr`.
+
+### Via the source code
+
+Clone the repository and run in the sourcecode folder:
+
+```sh
+cargo build --release
+```
+
+The binary will be in `target/release/markdown-code-runner`.
+
+### Via Nix
+
+You can use the package from this repository with Nix. If you have Nix installed, you can run the tool directly:
+
+```sh
+nix run github:drupol/markdown-code-runner
+```
 
 ## Usage
 
-```bash
+```sh
 mdcr --config config.toml path/to/file.md
 ```
 
 ### Check Mode (non-destructive)
 
-```bash
+```sh
 mdcr --config config.toml --check path/to/file.md
 ```
 
@@ -187,7 +208,10 @@ The logging system uses standard log levels, from most verbose to least:
 
 By default, if no `--log` option is provided, the logging level defaults to `warn`.
 
-[github stars]: https://img.shields.io/github/stars/drupol/markdown-code-runner.svg?style=flat-square
-[donate github]: https://img.shields.io/badge/Sponsor-Github-brightgreen.svg?style=flat-square
-[5]: https://github.com/sponsors/drupol
+[GitHub stars]: https://img.shields.io/github/stars/drupol/markdown-code-runner.svg?style=flat-square
+[Donate!]: https://img.shields.io/badge/Sponsor-Github-brightgreen.svg?style=flat-square
+[sponsor link]: https://github.com/sponsors/drupol
+[Crates.io License]: https://img.shields.io/crates/l/markdown-code-runner?style=flat-square
+[Crates.io Version]: https://img.shields.io/crates/v/markdown-code-runner?style=flat-square
+[markdown-code-runner crates]: https://crates.io/crates/markdown-code-runner
 [markdown-code-runner package]: https://search.nixos.org/packages?channel=unstable&from=0&size=50&sort=relevance&type=packages&query=markdown-code-runner

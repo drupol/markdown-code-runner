@@ -1,23 +1,47 @@
-use pulldown_cmark::{CodeBlockKind, Event, Parser as MdParser, Tag, TagEnd};
+use pulldown_cmark_codeblock::{CodeBlock as MarkdownCodeBlock, code_blocks};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone)]
 pub struct CodeBlock {
     pub path: PathBuf,
-    pub lang: String,
-    pub headers: String,
-    pub code: String,
-    pub start_line: usize,
-    pub end_line: usize,
-    pub indent: usize,
+    pub markdown: MarkdownCodeBlock,
+    pub replacement: Option<String>,
 }
 
 impl CodeBlock {
     pub fn with_updated_code(&self, new_code: String) -> Self {
         Self {
-            code: new_code,
+            replacement: Some(new_code),
             ..self.clone()
         }
+    }
+
+    pub fn language(&self) -> &str {
+        self.markdown.language.as_deref().unwrap_or_default()
+    }
+
+    pub fn source(&self) -> &str {
+        &self.markdown.source
+    }
+
+    pub fn replacement_source(&self) -> &str {
+        self.replacement.as_deref().unwrap_or(&self.markdown.source)
+    }
+
+    pub fn info_string(&self) -> &str {
+        &self.markdown.info_string
+    }
+
+    pub fn start_line(&self) -> usize {
+        self.markdown.line_range.start
+    }
+
+    pub fn end_line(&self) -> usize {
+        self.markdown.line_range.end
+    }
+
+    pub fn indent(&self) -> usize {
+        self.markdown.indent
     }
 }
 
@@ -28,71 +52,30 @@ pub struct CodeBlockProcessingResult {
 }
 
 pub fn parse_code_blocks(path: &Path, content: &str) -> Vec<CodeBlock> {
-    let mut blocks = Vec::new();
-    let mut parser = MdParser::new(content).into_offset_iter();
+    code_blocks(content)
+        .filter(|block| block.is_fenced())
+        .filter(|block| !block.has_info_word("mdcr-skip"))
+        .map(|block| CodeBlock {
+            path: path.to_path_buf(),
+            markdown: block,
+            replacement: None,
+        })
+        .collect()
+}
 
-    while let Some((event, range)) = parser.next() {
-        if let Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(headers))) = event {
-            if headers.contains("mdcr-skip") {
-                // We need to consume until the end of this block
-                for (e, _) in &mut parser {
-                    if let Event::End(TagEnd::CodeBlock) = e {
-                        break;
-                    }
-                }
-                continue;
-            }
+#[cfg(test)]
+mod tests {
+    use super::parse_code_blocks;
+    use std::path::Path;
 
-            let lang = headers
-                .split_whitespace()
-                .next()
-                .unwrap_or_default()
-                .to_string();
+    #[test]
+    fn mdcr_parser_filters_skip_blocks() {
+        let markdown = "```rust mdcr-skip\nignored\n```\n\n```rust\nkept\n```\n";
 
-            let mut code = String::new();
-            let start_offset = range.start;
-            let mut end_offset = range.end;
+        let blocks = parse_code_blocks(Path::new("test.md"), markdown);
 
-            for (event, r) in &mut parser {
-                match event {
-                    Event::Text(text) => {
-                        code.push_str(&text);
-                        end_offset = r.end;
-                    }
-                    Event::End(TagEnd::CodeBlock) => {
-                        end_offset = r.end;
-                        break;
-                    }
-                    _ => {}
-                }
-            }
-
-            // Calculate lines
-            let start_line = content[..start_offset].lines().count();
-            let end_line = content[..end_offset].lines().count();
-
-            // Calculate indentation
-            let indent: usize = content
-                .get(..start_offset)
-                .and_then(|s| s.lines().last())
-                .unwrap_or("")
-                .chars()
-                .take_while(|c| c.is_whitespace())
-                .count();
-
-            // Correction for 1-based indexing expectations if any, or just consistent logic
-            let start_line = start_line - (indent > 0) as usize;
-
-            blocks.push(CodeBlock {
-                path: path.to_path_buf(),
-                lang,
-                headers: headers.to_string(),
-                code,
-                start_line,
-                end_line,
-                indent,
-            });
-        }
+        assert_eq!(blocks.len(), 1);
+        assert_eq!(blocks[0].language(), "rust");
+        assert_eq!(blocks[0].source(), "kept\n");
     }
-    blocks
 }

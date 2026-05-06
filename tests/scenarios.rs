@@ -24,15 +24,8 @@ fn test_all_scenarios_with_input_reset_and_cleanup() {
 
         fs::copy(&input, &test).expect("Failed to copy test.input.md -> test.md");
 
-        let output = std::process::Command::new("cargo")
-            .args([
-                "run",
-                "--quiet",
-                "--",
-                test.to_str().unwrap(),
-                "--config",
-                config.to_str().unwrap(),
-            ])
+        let output = std::process::Command::new(env!("CARGO_BIN_EXE_mdcr"))
+            .args([test.to_str().unwrap(), "--config", config.to_str().unwrap()])
             .output()
             .unwrap();
 
