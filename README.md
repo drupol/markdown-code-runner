@@ -47,7 +47,7 @@ Clone the repository and run in the sourcecode folder:
 cargo build --release
 ```
 
-The binary will be in `target/release/markdown-code-runner`.
+The binary will be in `target/release/mdcr`.
 
 ### Via Nix
 
@@ -214,4 +214,4 @@ By default, if no `--log` option is provided, the logging level defaults to `war
 [Crates.io License]: https://img.shields.io/crates/l/mdcr?style=flat-square
 [Crates.io Version]: https://img.shields.io/crates/v/mdcr?style=flat-square
 [mdcr crates]: https://crates.io/crates/mdcr
-[markdown-code-runner package]: https://search.nixos.org/packages?channel=unstable&from=0&size=50&sort=relevance&type=packages&query=markdown-code-runner
+[`markdown-code-runner` package]: https://search.nixos.org/packages?channel=unstable&from=0&size=50&sort=relevance&type=packages&query=markdown-code-runner

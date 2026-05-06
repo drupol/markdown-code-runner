@@ -6,10 +6,10 @@
     treefmt = {
       projectRootFile = "flake.nix";
       programs = {
+        deadnix.enable = true;
         jsonfmt.enable = true;
         nixfmt.enable = true;
         prettier.enable = true;
-        rustfmt.enable = true;
         statix.enable = true;
         typos.enable = true;
         yamlfmt.enable = true;
