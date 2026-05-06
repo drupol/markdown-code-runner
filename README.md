@@ -1,9 +1,9 @@
 ![GitHub stars][GitHub stars]
-[![Crates.io Version][Crates.io Version]][markdown-code-runner crates]
-[![Crates.io License][Crates.io License]][markdown-code-runner crates]
+[![Crates.io Version][Crates.io Version]][mdcr crates]
+[![Crates.io License][Crates.io License]][mdcr crates]
 [![Donate!][Donate!]][sponsor link]
 
-# Markdown-code-runner
+# MDCR - Markdown Code Runner
 
 A configurable command-line tool written in **Rust** that parses Markdown files, extracts fenced code blocks, executes them via external arbitrary commands, and optionally replaces the content of the blocks with the command output.
 
@@ -32,7 +32,7 @@ Useful for:
 You can install the binary with Cargo:
 
 ```sh
-cargo install markdown-code-runner
+cargo install mdcr
 ```
 
 ### Via Nixpkgs
@@ -211,7 +211,7 @@ By default, if no `--log` option is provided, the logging level defaults to `war
 [GitHub stars]: https://img.shields.io/github/stars/drupol/markdown-code-runner.svg?style=flat-square
 [Donate!]: https://img.shields.io/badge/Sponsor-Github-brightgreen.svg?style=flat-square
 [sponsor link]: https://github.com/sponsors/drupol
-[Crates.io License]: https://img.shields.io/crates/l/markdown-code-runner?style=flat-square
-[Crates.io Version]: https://img.shields.io/crates/v/markdown-code-runner?style=flat-square
-[markdown-code-runner crates]: https://crates.io/crates/markdown-code-runner
+[Crates.io License]: https://img.shields.io/crates/l/mdcr?style=flat-square
+[Crates.io Version]: https://img.shields.io/crates/v/mdcr?style=flat-square
+[mdcr crates]: https://crates.io/crates/mdcr
 [markdown-code-runner package]: https://search.nixos.org/packages?channel=unstable&from=0&size=50&sort=relevance&type=packages&query=markdown-code-runner

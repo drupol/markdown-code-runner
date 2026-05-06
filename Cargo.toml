@@ -1,5 +1,5 @@
 [package]
-name = "markdown-code-runner"
+name = "mdcr"
 version = "0.5.0"
 edition = "2024"
 description = "Validate, execute and optionally rewrite code blocks in Markdown files based on arbitrary commands"
