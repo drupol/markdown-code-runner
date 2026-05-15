@@ -495,6 +495,95 @@ echo lang2
 }
 
 #[test]
+fn test_output_language_rewrites_code_block_language() {
+    let env = TestEnv::from_raw_markdown(
+        r#"
+```nixToJson
+{ enabled = true; name = "hello"; }
+```
+        "#,
+        r#"
+        [presets.nixtojson]
+        language = "nixToJson"
+        command = ["printf", "{\"enabled\":true,\"name\":\"hello\"}"]
+        input_mode = "stdin"
+        output_mode = "replace"
+        output_language = "json"
+        "#,
+    );
+
+    let output = env.run(&[
+        env.md_path.to_str().unwrap(),
+        "--config",
+        env.cfg_path.to_str().unwrap(),
+    ]);
+
+    assert!(output.status.success());
+    let updated = std::fs::read_to_string(&env.md_path).unwrap();
+    assert!(updated.contains("```json\n{\"enabled\":true,\"name\":\"hello\"}\n```"));
+    assert!(!updated.contains("```nixToJson"));
+}
+
+#[test]
+fn test_output_language_preserves_info_string_attributes() {
+    let env = TestEnv::from_raw_markdown(
+        r#"
+```nixToJson title="flake output"
+{}
+```
+        "#,
+        r#"
+        [presets.nixtojson]
+        language = "nixToJson"
+        command = ["printf", "{}"]
+        input_mode = "stdin"
+        output_mode = "replace"
+        output_language = "json"
+        "#,
+    );
+
+    let output = env.run(&[
+        env.md_path.to_str().unwrap(),
+        "--config",
+        env.cfg_path.to_str().unwrap(),
+    ]);
+
+    assert!(output.status.success());
+    let updated = std::fs::read_to_string(&env.md_path).unwrap();
+    assert!(updated.contains("```json title=\"flake output\"\n{}\n```"));
+}
+
+#[test]
+fn test_check_mode_detects_output_language_only_mismatch() {
+    let env = TestEnv::from_raw_markdown(
+        r#"
+```nixToJson
+{}
+```
+        "#,
+        r#"
+        [presets.nixtojson]
+        language = "nixToJson"
+        command = ["printf", "{}"]
+        input_mode = "stdin"
+        output_mode = "replace"
+        output_language = "json"
+        "#,
+    );
+
+    let output = env.run(&[
+        env.md_path.to_str().unwrap(),
+        "--check",
+        "--config",
+        env.cfg_path.to_str().unwrap(),
+    ]);
+
+    assert!(!output.status.success());
+    let after = std::fs::read_to_string(&env.md_path).unwrap();
+    assert!(after.contains("```nixToJson\n{}\n```"));
+}
+
+#[test]
 fn test_legacy_language_field() {
     let env = TestEnv::from_raw_markdown(
         r#"

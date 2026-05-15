@@ -28,6 +28,8 @@ pub struct PresetConfig {
     pub input_mode: InputMode,
     #[serde(default)]
     pub output_mode: OutputMode,
+    #[serde(default)]
+    pub output_language: Option<String>,
 }
 
 fn deserialize_string_or_vec<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
