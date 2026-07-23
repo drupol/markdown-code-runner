@@ -1,6 +1,6 @@
 use log::debug;
 use std::fs;
-use std::io::Write;
+use std::io::{ErrorKind, Write};
 use std::path::Path;
 use std::process::{Command, Output, Stdio};
 use tempfile::NamedTempFile;
@@ -33,7 +33,13 @@ fn run_command_with_stdin(
 
     let mut child = cmd.spawn()?;
     if let Some(stdin) = child.stdin.as_mut() {
-        stdin.write_all(input.as_bytes())?;
+        match stdin.write_all(input.as_bytes()) {
+            Ok(()) => {}
+            // The child may exit without reading stdin. Preserve its exit
+            // status instead of replacing it with a broken-pipe error.
+            Err(error) if error.kind() == ErrorKind::BrokenPipe => {}
+            Err(error) => return Err(error.into()),
+        }
     }
 
     let output = child.wait_with_output()?;
