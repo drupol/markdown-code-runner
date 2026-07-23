@@ -1,6 +1,6 @@
 [package]
 name = "mdcr"
-version = "0.5.1"
+version = "0.5.2"
 edition = "2024"
 description = "Validate, execute and optionally rewrite code blocks in Markdown files based on arbitrary commands"
 readme = "README.md"
@@ -16,10 +16,10 @@ keywords = [
 [dependencies]
 anyhow = "1.0"
 clap = { version = "4.6", features = ["cargo", "derive"] }
-env_logger = "0.11.10"
-log = "0.4.29"
+env_logger = "0.11.11"
+log = "0.4.33"
 pulldown-cmark-codeblock = { version = "0.1.0" }
-rayon = "1.11.0"
+rayon = "1.12.0"
 serde = { version = "1.0", features = ["derive"] }
 tempfile = "3"
 toml = { version = "1.1", features = ["parse"] }
