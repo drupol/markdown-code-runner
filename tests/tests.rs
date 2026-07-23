@@ -114,8 +114,10 @@ fn test_check_mode_detects_differences() {
 
 #[test]
 fn test_prints_warning_on_failure() {
+    // Exceed pipe capacity so that child closes stdin before we write last byte.
+    let markdown = "echo bad\n".repeat(128 * 1024);
     let env = TestEnv::new(
-        "echo bad",
+        &markdown,
         "sh",
         r#"
         [presets.bad-sh]
