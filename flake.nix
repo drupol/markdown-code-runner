@@ -1,21 +1,17 @@
 {
   inputs = {
-    nixpkgs.url = "github:/nixos/nixpkgs/nixos-unstable";
-
-    flake-parts.url = "github:hercules-ci/flake-parts";
-    flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs";
-
-    flake-compat.url = "github:NixOS/flake-compat";
     flake-compat.flake = false;
-
-    git-hooks.url = "github:cachix/git-hooks.nix";
+    flake-compat.url = "github:NixOS/flake-compat";
+    flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs";
+    flake-parts.url = "github:hercules-ci/flake-parts";
     git-hooks.inputs.nixpkgs.follows = "nixpkgs";
-
-    pkgs-by-name-for-flake-parts.url = "github:drupol/pkgs-by-name-for-flake-parts";
-
+    git-hooks.url = "github:cachix/git-hooks.nix";
     import-tree.url = "github:vic/import-tree";
-    treefmt-nix.url = "github:numtide/treefmt-nix";
     make-shell.url = "github:nicknovitski/make-shell";
+    nixpkgs.url = "github:/nixos/nixpkgs/nixos-unstable";
+    pedantix.url = "github:swarsel/pedantix";
+    pkgs-by-name-for-flake-parts.url = "github:drupol/pkgs-by-name-for-flake-parts";
+    treefmt-nix.url = "github:numtide/treefmt-nix";
   };
 
   outputs =

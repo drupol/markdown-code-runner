@@ -11,10 +11,6 @@
   perSystem =
     { pkgs, ... }:
     {
-      pre-commit.settings.hooks = {
-        commitizen.enable = true;
-      };
-
       make-shells.default = {
         packages = with pkgs; [
           cargo
@@ -28,6 +24,10 @@
           export PATH=$PWD/target/debug:$PATH
           export RUST_SRC_PATH="${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
         '';
+      };
+
+      pre-commit.settings.hooks = {
+        commitizen.enable = true;
       };
     };
 }

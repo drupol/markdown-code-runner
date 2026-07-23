@@ -4,13 +4,6 @@
     inputs.pkgs-by-name-for-flake-parts.flakeModule
   ];
 
-  perSystem =
-    { config, ... }:
-    {
-      pkgsDirectory = ../pkgs;
-      packages.default = config.packages.markdown-code-runner;
-    };
-
   flake = {
     overlays.default =
       _final: prev:
@@ -21,4 +14,11 @@
         }
       );
   };
+
+  perSystem =
+    { config, ... }:
+    {
+      packages.default = config.packages.markdown-code-runner;
+      pkgsDirectory = ../pkgs;
+    };
 }
