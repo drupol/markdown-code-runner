@@ -240,7 +240,11 @@ fn handle_preset_result(
     match preset_cfg.output_mode {
         OutputMode::Check => Ok(None),
         OutputMode::Replace => {
-            let mismatch = String::from_utf8_lossy(&output.stdout).trim() != block.source().trim();
+            let command_output = String::from_utf8_lossy(&output.stdout);
+            let replacement_info_string =
+                replacement_info_string(block.info_string(), preset_cfg.output_language.as_deref());
+            let mismatch = command_output.trim() != block.source().trim()
+                || replacement_info_string != block.info_string();
 
             if !mismatch {
                 debug!(
@@ -269,13 +273,8 @@ fn handle_preset_result(
                 block.path.display()
             );
 
-            let updated_code = std::iter::once(format!("```{}", block.info_string()))
-                .chain(
-                    String::from_utf8_lossy(&output.stdout)
-                        .trim()
-                        .lines()
-                        .map(|l| l.to_string()),
-                )
+            let updated_code = std::iter::once(format!("```{replacement_info_string}"))
+                .chain(command_output.trim().lines().map(|l| l.to_string()))
                 .chain(std::iter::once("```".to_string()))
                 .map(|l| {
                     format!("{:indent$}{}", "", l, indent = block.indent())
@@ -288,4 +287,18 @@ fn handle_preset_result(
             Ok(Some(block.with_updated_code(updated_code)))
         }
     }
+}
+
+fn replacement_info_string(original: &str, output_language: Option<&str>) -> String {
+    let Some(output_language) = output_language.map(str::trim).filter(|s| !s.is_empty()) else {
+        return original.to_string();
+    };
+
+    let original = original.trim_start();
+    let suffix = original
+        .find(char::is_whitespace)
+        .map(|index| &original[index..])
+        .unwrap_or_default();
+
+    format!("{output_language}{suffix}")
 }

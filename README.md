@@ -131,6 +131,35 @@ Each preset also supports an optional `output_mode`, which defines how the comma
 
 If not specified, both `input_mode` and `output_mode` default to `stdin` and `replace`, respectively.
 
+#### Updating the output block language
+
+Presets in `replace` mode can also update the Markdown code block language by setting `output_language`:
+
+```toml
+[presets.nixtojson]
+language = "nixToJson"
+command = ["nix", "eval", "--json", "--file", "{file}"]
+input_mode = "file"
+output_mode = "replace"
+output_language = "json"
+```
+
+This lets a generated block change from:
+
+````
+```nixToJson
+{ enabled = true; }
+```
+````
+
+to:
+
+````
+```json
+{"enabled":true}
+```
+````
+
 ## Markdown Syntax
 
 The tool scans for fenced code blocks like:
